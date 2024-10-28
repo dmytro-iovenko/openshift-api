@@ -1,4 +1,5 @@
 import Application from "../models/Application.js";
+import { createDeployment, deleteDeployment, getDeployments } from "../helpers/openshiftApi.js";
 
 /**
  * Creates a new application entry in the database.
@@ -10,9 +11,13 @@ import Application from "../models/Application.js";
  * @returns {Promise<void>} Responds with the created application.
  */
 export const createApplication = async (req, res) => {
-  const { name, deploymentId } = req.body;
+  const { name, image } = req.body;
 
-  const application = new Application({ name, deploymentId });
+  // Create deployment in OpenShift
+  const deployment = await createDeployment(name, image);
+
+  // Save application in MongoDB
+  const application = new Application({ name, image, deploymentName: deployment.metadata.name });
   await application.save();
 
   res.status(201).json(application);
@@ -45,6 +50,17 @@ export const getApplications = async (req, res) => {
 export const deleteApplication = async (req, res) => {
   const { id } = req.params;
 
-  await Application.findByIdAndDelete(id);
-  res.status(204).send();
+  try {
+    const application = await Application.findByIdAndDelete(id);
+    if (!application) {
+      return res.status(404).json({ message: "Application not found" });
+    }
+
+    // Delete deployment from OpenShift
+    await deleteDeployment(application.deploymentName);
+
+    res.status(204).send();
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };

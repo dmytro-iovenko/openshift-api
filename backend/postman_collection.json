@@ -23,10 +23,15 @@
 			],
 			"request": {
 				"method": "POST",
-				"header": [],
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\"name\":\"{{appName}}\",\"deploymentId\":\"{{deploymentId}}\"}"
+					"raw": "{\"name\":\"{{appName}}\",\"image\":\"{{image}}\"}"
 				},
 				"url": {
 					"raw": "http://localhost:5000/api/applications",
@@ -58,7 +63,6 @@
 			],
 			"request": {
 				"method": "GET",
-				"header": [],
 				"url": {
 					"raw": "http://localhost:5000/api/applications",
 					"protocol": "http",
@@ -91,7 +95,6 @@
 			],
 			"request": {
 				"method": "DELETE",
-				"header": [],
 				"url": {
 					"raw": "http://localhost:5000/api/applications/{{appId}}",
 					"protocol": "http",
