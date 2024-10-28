@@ -1,7 +1,8 @@
 import express from "express";
-import applicationRoutes from './routes/applicationRoutes.js';
+import applicationRoutes from "./routes/applicationRoutes.js";
+import errorHandler from "./middleware/errorHandler.js";
+import connectDB from "./config.js";
 import cors from "cors";
-import connectDB from './config.js';
 import "dotenv/config";
 
 const app = express();
@@ -14,10 +15,13 @@ app.get("/", (req, res) => {
 });
 
 // Use application routes for handling requests related to applications
-app.use('/api/applications', applicationRoutes);
+app.use("/api/applications", applicationRoutes);
 
 // Connect to MongoDB
 connectDB();
+
+// Error handling middleware
+app.use(errorHandler);
 
 const PORT = 5000;
 app.listen(PORT, () => {
