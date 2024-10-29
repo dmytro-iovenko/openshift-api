@@ -2,7 +2,7 @@ import CircularProgress from "@mui/material/CircularProgress";
 import Box from "@mui/material/Box";
 
 /**
- * Loader component displays a loading spinner.
+ * Loader component to display a loading spinner.
  * @returns {JSX.Element} The loader UI.
  */
 const Loader = (): JSX.Element => (
