@@ -88,12 +88,8 @@ export const getOpenshiftDeployments = async () => {
  * @throws Will throw an error if the request fails.
  */
 export const getOpenshiftDeploymentDetails = async (name) => {
-  try {
-    const response = await axios.get(`/apis/apps/v1/deployments/${name}`); // Adjust URL as necessary
-    return response.data;
-  } catch (error) {
-    throw new Error(`Failed to fetch deployment details: ${error.message}`);
-  }
+  const url = `${API_URL}/apis/apps/v1/namespaces/${NAMESPACE}/deployments/${name}`;
+  return await openshiftRequest("GET", url); // Call the API to get a specific deployment by its name
 };
 
 /**

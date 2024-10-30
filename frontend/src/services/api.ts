@@ -1,5 +1,6 @@
 import axios from "axios";
 import { Application } from "../types/Application";
+import { Deployment } from "../types/Deployment";
 
 // Load environment variables
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
@@ -42,14 +43,33 @@ export const deleteApplication = async (id: string): Promise<void> => {
  * @param {string} newDescription - The new description for the application.
  * @returns {Promise<Application>} - The updated application object.
  */
-export const updateApplication = async (
-  id: string,
-  newName: string,
-  newDescription: string
-): Promise<Application> => {
+export const updateApplication = async (id: string, newName: string, newDescription: string): Promise<Application> => {
   const response = await axios.patch(`${API_BASE_URL}/api/applications/${id}`, {
     name: newName,
     description: newDescription,
   });
   return response.data;
+};
+
+/**
+ * Retrieves all deployments for a specific application.
+ * @param {string} id - The ID of the application.
+ * @returns {Promise<Deployment[]>} - The list of deployments.
+ */
+export const fetchDeployments = async (id: string): Promise<Deployment[]> => {
+  const response = await axios.get(`${API_BASE_URL}/api/applications/${id}/deployments`);
+  return response.data;
+//   const deployments = response.data;
+
+//   // Transform the data to a key-value format where keys are application IDs
+//   const deploymentsByAppId: Record<string, any[]> = {};
+//   deployments.forEach((deployment) => {
+//     const appId = deployment.applicationId;
+//     if (!deploymentsByAppId[appId]) {
+//       deploymentsByAppId[appId] = [];
+//     }
+//     deploymentsByAppId[appId].push(deployment);
+//   });
+
+//   return deploymentsByAppId;
 };

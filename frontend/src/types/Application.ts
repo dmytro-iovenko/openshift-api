@@ -1,3 +1,5 @@
+import { Deployment } from "./Deployment";
+
 /**
  * Represents an application entity.
  * @typedef {Object} Application
@@ -5,7 +7,7 @@
  * @property {string} name - Name of the application.
  * @property {string} description - Description of the application.
  * @property {string} image - Docker image associated with the application.
- * @property {string} deploymentName - Name of the deployment in OpenShift.
+ * @property {Deployment[]} deployments - List of deployments.
  * @property {string} createdAt - Timestamp of when the application was created.
  * @property {string} updatedAt - Timestamp of when the application was last updated.
  */
@@ -14,7 +16,7 @@ export interface Application {
   name: string;
   description?: string;
   image: string;
-  deploymentName: string;
+  deployments: Deployment[];
   createdAt: string;
   updatedAt: string;
 }

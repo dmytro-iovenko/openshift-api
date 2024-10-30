@@ -60,12 +60,32 @@ export const createDeployment = async (req, res, next) => {
  * @returns {Promise<void>} - Responds with a list of deployments.
  */
 export const getDeployments = async (req, res, next) => {
-  const { applicationId } = req.params;
+  const { id } = req.params;
 
-  console.debug("Fetching deployments:", applicationId);
+  console.debug("Fetching deployments:", id);
   try {
-    const deployments = await Deployment.find({ applicationId });
-    res.status(200).json(deployments);
+    // Fetch deployments from MongoDB
+    const deployments = await Deployment.find({ applicationId: id });
+
+    // Fetch additional deployment data from OpenShift
+    const openShiftDeployments = await Promise.all(
+      deployments.map(async (deployment) => {
+        try {
+          return await getOpenshiftDeploymentDetails(deployment.name);
+        } catch (error) {
+          console.error(`Failed to fetch details for deployment ${deployment.name}: ${error.message}`);
+          return null;
+        }
+      })
+    );
+
+    // Combine the data
+    const combinedDeployments = deployments.map((deployment, index) => ({
+      ...deployment.toObject(),
+      openShiftDetails: openShiftDeployments[index],
+    }));
+
+    res.status(200).json(combinedDeployments);
   } catch (error) {
     next(error);
   }

@@ -19,7 +19,7 @@ export const createApplication = async (req, res, next) => {
   console.debug("Creating application:", name, description, image);
   try {
     // Create application and save it in MongoDB
-    const application = new Application({ name, description, image, deploymentName: deployment.metadata.name });
+    const application = new Application({ name, description, image });
     const savedApplication = await application.save();
 
     // Create deployment in OpenShift and link it to the application
@@ -53,7 +53,7 @@ export const createApplication = async (req, res, next) => {
 export const getApplications = async (req, res, next) => {
   console.debug("Fetching applications");
   try {
-    const applications = await Application.find();
+    const applications = await Application.find().populate("deployments");
     res.status(200).json(applications);
   } catch (error) {
     next(error);
