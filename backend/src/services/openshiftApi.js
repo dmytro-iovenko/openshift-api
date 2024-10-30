@@ -40,7 +40,7 @@ export const openshiftRequest = async (method, url, data = {}) => {
  * @param {string} image - The Docker image for the deployment.
  * @returns {Promise<object>} - The created deployment data.
  */
-export const createDeployment = async (name, image) => {
+export const createOpenshiftDeployment = async (name, image) => {
   const deploymentConfig = {
     apiVersion: "apps/v1",
     kind: "Deployment",
@@ -65,7 +65,7 @@ export const createDeployment = async (name, image) => {
  * @param {string} name - The name of the deployment to delete.
  * @returns {Promise<object>} - The response from the API.
  */
-export const deleteDeployment = async (name) => {
+export const deleteOpenshiftDeployment = async (name) => {
   const url = `${API_URL}/apis/apps/v1/namespaces/${NAMESPACE}/deployments/${name}`;
   return await openshiftRequest("DELETE", url); // Call the API to delete the deployment
 };
@@ -75,7 +75,40 @@ export const deleteDeployment = async (name) => {
  *
  * @returns {Promise<object>} - The list of deployments.
  */
-export const getDeployments = async () => {
+export const getOpenshiftDeployments = async () => {
   const url = `${API_URL}/apis/apps/v1/namespaces/${NAMESPACE}/deployments`;
   return await openshiftRequest("GET", url); // Call the API to get all deployments
+};
+
+/**
+ * Retrieves details of a specific deployment by its name.
+ *
+ * @param {string} name - The name of the deployment.
+ * @returns {Promise<Object>} The details of the deployment.
+ * @throws Will throw an error if the request fails.
+ */
+export const getOpenshiftDeploymentDetails = async (name) => {
+  try {
+    const response = await axios.get(`/apis/apps/v1/deployments/${name}`); // Adjust URL as necessary
+    return response.data;
+  } catch (error) {
+    throw new Error(`Failed to fetch deployment details: ${error.message}`);
+  }
+};
+
+/**
+ * Updates an existing deployment in OpenShift.
+ *
+ * @param {string} name - The name of the deployment to update.
+ * @param {Object} updateData - The data to update the deployment with.
+ * @returns {Promise<Object>} The updated deployment details.
+ * @throws Will throw an error if the request fails.
+ */
+export const updateOpenshiftDeployment = async (name, updateData) => {
+  try {
+    const response = await axios.patch(`/apis/apps/v1/deployments/${name}`, updateData); // Adjust URL as necessary
+    return response.data;
+  } catch (error) {
+    throw new Error(`Failed to update deployment: ${error.message}`);
+  }
 };

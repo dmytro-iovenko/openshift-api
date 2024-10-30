@@ -8,7 +8,7 @@ import mongoose from "mongoose";
  * @property {String} name - The name of the application. This field is required.
  * @property {String} description - The description of the application.
  * @property {String} image - The Docker image used for deployment. This field is required.
- * @property {String} deploymentName - The name of the Deployment in OpenShift. This field is required.
+ * @property {String} deployments - An array of Deployment IDs.
  * @property {Date} createdAt - The timestamp when the application was created.
  * @property {Date} updatedAt - The timestamp when the application was last updated.
  */
@@ -17,8 +17,8 @@ const ApplicationSchema = new mongoose.Schema(
     name: { type: String, required: true },
     description: { type: String },
     image: { type: String, required: true },
-    deploymentName: { type: String, required: true },
-},
+    deployments: [{ type: mongoose.Schema.Types.ObjectId, ref: "Deployment" }], // Changed to store an array of Deployment IDs
+  },
   { timestamps: true }
 );
 

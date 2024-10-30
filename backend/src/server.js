@@ -1,6 +1,7 @@
 import express from "express";
 import applicationRoutes from "./routes/applicationRoutes.js";
-import errorHandler from "./middleware/errorHandler.js";
+import deploymentRoutes from "./routes/deploymentRoutes.js";
+import errorHandler from "./middlewares/errorHandler.js";
 import connectDB from "./config.js";
 import cors from "cors";
 import "dotenv/config";
@@ -16,6 +17,9 @@ app.get("/", (req, res) => {
 
 // Use application routes for handling requests related to applications
 app.use("/api/applications", applicationRoutes);
+
+// Use nested routing for deployments
+app.use("/api/applications/:id/deployments", deploymentRoutes); 
 
 // Connect to MongoDB
 connectDB();
