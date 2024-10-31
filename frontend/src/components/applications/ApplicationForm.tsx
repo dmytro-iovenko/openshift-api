@@ -1,6 +1,14 @@
 import { useEffect, useState } from "react";
 import { TextField, Button, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
 
+interface ApplicationFormProps {
+  open: boolean;
+  onClose: () => void;
+  onSubmit: (data: { name: string; description?: string; image?: string }) => Promise<void>;
+  initialData?: { name: string; description?: string; image?: string };
+  isEditMode: boolean;
+}
+
 /**
  * ApplicationForm component for adding or editing applications.
  *
@@ -12,18 +20,12 @@ import { TextField, Button, Dialog, DialogActions, DialogContent, DialogTitle } 
  * @param {boolean} props.isEditMode - Flag indicating if the form is in edit mode.
  * @returns {JSX.Element} The rendered application form.
  */
-const ApplicationForm = ({
+const ApplicationForm: React.FC<ApplicationFormProps> = ({
   open,
   onClose,
   onSubmit,
   initialData,
   isEditMode,
-}: {
-  open: boolean;
-  onClose: () => void;
-  onSubmit: (data: { name: string; description?: string; image?: string }) => Promise<void>;
-  initialData?: { name: string; description?: string; image?: string };
-  isEditMode: boolean;
 }): JSX.Element => {
   const [name, setName] = useState(initialData?.name || "");
   const [description, setDescription] = useState(initialData?.description);

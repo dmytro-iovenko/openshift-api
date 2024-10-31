@@ -16,19 +16,16 @@ const NAMESPACE = process.env.OPENSHIFT_NAMESPACE;
  * @throws {Error} - If the request fails.
  */
 export const openshiftRequest = async (method, url, data = {}) => {
+  const headers = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${AUTH_TOKEN}`,
+  };
+
+  console.debug(`OpenShift API request: ${method} ${url}`, headers, data);
   try {
-    const response = await axios({
-      method,
-      url,
-      data,
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${AUTH_TOKEN}`,
-      },
-    });
+    const response = await axios({ method, url, data, headers });
     return response.data;
   } catch (error) {
-    // Handle errors and throw a descriptive error message
     throw new Error(error.response?.data?.message || "OpenShift API request failed");
   }
 };

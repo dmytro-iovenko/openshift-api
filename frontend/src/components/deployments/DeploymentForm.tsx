@@ -1,7 +1,15 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button } from "@mui/material";
 
-const DeploymentForm = ({ open, onClose, onSubmit, initialData }) => {
+interface DeploymentFormProps {
+  open: boolean;
+  onClose: () => void;
+  onSubmit: (data: { name: string; image: string }) => Promise<void>;
+  initialData?: { name: string; image: string };
+  isEditMode: boolean;
+}
+
+const DeploymentForm: React.FC<DeploymentFormProps> = ({ open, onClose, onSubmit, initialData }) => {
   const [name, setName] = useState(initialData?.name || "");
   const [image, setImage] = useState(initialData?.image || "");
 

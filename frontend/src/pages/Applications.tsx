@@ -1,19 +1,13 @@
 import React, { useEffect, useState } from "react";
 // import { Container, Grid, Button, Dialog, DialogActions, DialogContent, DialogTitle, Tab, Tabs } from "@mui/material";
-import { Container, Grid, Button } from "@mui/material";
+import { Button, Typography, Box } from "@mui/material";
+import Grid from "@mui/material/Grid2";
+import AddCircleTwoToneIcon from "@mui/icons-material/AddCircleTwoTone";
 import Loader from "../components/Loader";
-import ApplicationCard from "../components/ApplicationCard";
-import ApplicationForm from "../components/ApplicationForm";
-import {
-  createApplication,
-  fetchApplications,
-  deleteApplication,
-  updateApplication,
-  //   fetchDeployments,
-} from "../services/api"; // Import fetchDeployments
+import ApplicationCard from "../components/applications/ApplicationCard";
+import ApplicationForm from "../components/applications/ApplicationForm";
+import { createApplication, fetchApplications, deleteApplication, updateApplication } from "../services/api";
 import { Application } from "../types/Application";
-// import { Deployment } from "../types/Deployment";
-// import { DataGrid } from "@mui/x-data-grid";
 
 /**
  * Applications component to fetch and display a list of applications.
@@ -129,14 +123,22 @@ const Applications: React.FC = (): JSX.Element => {
   }
 
   return (
-    <Container>
-      <h1>Applications</h1>
-      <Button variant="contained" onClick={() => setOpenForm(true)}>
-        Add Application
-      </Button>
-      <Grid container spacing={2}>
+    <Grid direction="row" size={12} p={3}>
+      <Box display="flex" justifyContent="space-between" pb={4}>
+        <Typography variant="h4">Applications</Typography>
+        <Box display="flex" flexDirection="column">
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => setOpenForm(true)}
+            startIcon={<AddCircleTwoToneIcon />}>
+            Create new application
+          </Button>
+        </Box>
+      </Box>
+      <Grid container direction="row" spacing={{ xs: 2, sm: 3 }} columns={12}>
         {applications.map((app) => (
-          <Grid item xs={12} sm={6} md={4} key={app._id}>
+          <Grid direction="row" size={{ xs: 12, sm: 6, lg: 4 }} key={app._id}>
             <ApplicationCard application={app} onEdit={() => handleEdit(app)} onDelete={() => handleDelete(app._id)} />
           </Grid>
         ))}
@@ -156,43 +158,7 @@ const Applications: React.FC = (): JSX.Element => {
         }
         isEditMode={!!currentApplication} // Set to true if editing, false if creating
       />
-      {/* <Dialog open={openDetails} onClose={handleDetailsClose}>
-        <DialogTitle>{currentApplication?.name}</DialogTitle>
-        <DialogContent>
-          <Tabs value={tabIndex} onChange={handleTabChange}>
-            <Tab label="Details" />
-            <Tab label="Deployments" />
-          </Tabs>
-          {tabIndex === 0 && (
-            <div>
-              <p>Description: {currentApplication?.description}</p>
-              <p>Image: {currentApplication?.image}</p>
-            </div>
-          )}
-          {tabIndex === 1 && (
-            <div style={{ height: 400, width: "100%" }}>
-              <DataGrid
-                rows={deployments.map((dep) => ({
-                  id: dep.id,
-                  name: dep.name,
-                  status: dep.status,
-                }))} // Transform deployments to match the columns
-                columns={[
-                  { field: "id", headerName: "ID", width: 90 },
-                  { field: "name", headerName: "Name", width: 150 },
-                  { field: "status", headerName: "Status", width: 150 },
-                ]} // Define columns
-                // pageSize={5}
-                // rowsPerPageOptions={[5]}
-              />
-            </div>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleDetailsClose}>Close</Button>
-        </DialogActions>
-      </Dialog> */}
-    </Container>
+    </Grid>
   );
 };
 
