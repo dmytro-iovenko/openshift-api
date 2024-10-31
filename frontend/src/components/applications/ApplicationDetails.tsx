@@ -2,10 +2,21 @@ import React from "react";
 import { Typography } from "@mui/material";
 import { Application } from "../../types/Application";
 
+/**
+ * Represents detailed information about the application.
+ *
+ * @property {Application} application - The application data to display.
+ */
 interface ApplicationDetailsProps {
   application: Application;
 }
 
+/**
+ * Renders detailed information about the application.
+ *
+ * @param {ApplicationDetailsProps} props - The props for the component.
+ * @returns {JSX.Element} The rendered component.
+ */
 const ApplicationDetails: React.FC<ApplicationDetailsProps> = ({ application }) => {
   return (
     <div>

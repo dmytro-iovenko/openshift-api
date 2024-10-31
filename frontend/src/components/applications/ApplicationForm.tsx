@@ -1,6 +1,15 @@
 import { useEffect, useState } from "react";
 import { TextField, Button, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
 
+/**
+ * Represents the application form.
+ * 
+ * @property {boolean} open - Whether the dialog is open.
+ * @property {() => void} onClose - Callback function to close the dialog.
+ * @property {(data: { name: string; description?: string; image?: string }) => Promise<void>} onSubmit - Callback function to handle form submission.
+ * @property {{ name: string; description?: string; image?: string }} [initialData] - Initial data for the form when editing.
+ * @property {boolean} isEditMode - Flag indicating if the form is in edit mode.
+ */
 interface ApplicationFormProps {
   open: boolean;
   onClose: () => void;

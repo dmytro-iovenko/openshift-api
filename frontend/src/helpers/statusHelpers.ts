@@ -1,6 +1,11 @@
 import { Deployment } from "../types/Deployment";
 
-// Function to calculate the status counts for deployments
+/**
+ * Calculates the counts of deployment statuses from a list of deployments.
+ *
+ * @param {Deployment[]} deployments - The array of deployments to evaluate.
+ * @returns - An object containing the counts of each deployment status.
+ */
 export const calculateDeploymentStatuses = (deployments: Deployment[]) => {
   const statusCounts = {
     Available: 0,
@@ -9,6 +14,7 @@ export const calculateDeploymentStatuses = (deployments: Deployment[]) => {
     Pending: 0,
   };
 
+  // Iterate through each deployment and count statuses
   deployments.forEach((dep) => {
     console.log(dep.status);
     switch (dep.status) {

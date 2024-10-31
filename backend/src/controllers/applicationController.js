@@ -1,7 +1,30 @@
 import Application from "../models/Application.js";
 import Deployment from "../models/Deployment.js";
-import { createOpenshiftDeployment, deleteOpenshiftDeployment } from "../services/openshiftApi.js";
+import {
+  createOpenshiftDeployment,
+  deleteOpenshiftDeployment,
+  getOpenshiftDeployments,
+} from "../services/openshiftApi.js";
 import error from "../utils/error.js";
+
+/**
+ * Fetches deployments from OpenShift and creates a mapping of deployment names to their details.
+ * 
+ * @async
+ * @function fetchOpenShiftDeployments
+ * @returns {Promise<Object>} A promise that resolves to an object mapping deployment names to their details.
+ */
+const fetchOpenShiftDeployments = async () => {
+  const openShiftDeployments = await getOpenshiftDeployments();
+
+  // Create a mapping of deployment names to their details
+  const openShiftDeploymentMap = {};
+  openShiftDeployments.items.forEach((deployment) => {
+    openShiftDeploymentMap[deployment.metadata.name] = deployment;
+  });
+
+  return openShiftDeploymentMap;
+};
 
 /**
  * Creates a new application entry in the database.
@@ -54,7 +77,25 @@ export const getApplications = async (req, res, next) => {
   console.debug("Fetching applications");
   try {
     const applications = await Application.find().populate("deployments");
-    res.status(200).json(applications);
+    const openShiftDeploymentMap = await fetchOpenShiftDeployments();
+
+    // Update applications with OpenShift deployment data
+    const applicationsWithOpenShiftData = applications.map((app) => {
+      const updatedDeployments = app.deployments.map((deployment) => {
+        const openShiftData = openShiftDeploymentMap[deployment.name] || null;
+        return {
+          ...deployment.toObject(),
+          openShiftDetails: openShiftData,
+        };
+      });
+
+      return {
+        ...app.toObject(),
+        deployments: updatedDeployments,
+      };
+    });
+
+    res.status(200).json(applicationsWithOpenShiftData);
   } catch (error) {
     next(error);
   }
@@ -65,13 +106,28 @@ export const getApplication = async (req, res, next) => {
 
   console.debug("Fetching application:", id);
   try {
-    const application = await Application.findById(id).populate("deployments"); // Populate deployments if necessary
-
+    const application = await Application.findById(id).populate("deployments");
     if (!application) {
       return next(error(404, "Application not found"));
     }
 
-    res.status(200).json(application);
+    const openShiftDeploymentMap = await fetchOpenShiftDeployments();
+
+    // Update the application's deployments with OpenShift data
+    const updatedDeployments = application.deployments.map((deployment) => {
+      const openShiftData = openShiftDeploymentMap[deployment.name] || null;
+      return {
+        ...deployment.toObject(),
+        openShiftDetails: openShiftData,
+      };
+    });
+
+    const updatedApplication = {
+      ...application.toObject(),
+      deployments: updatedDeployments,
+    };
+
+    res.status(200).json(updatedApplication);
   } catch (error) {
     next(error);
   }
@@ -94,14 +150,20 @@ export const deleteApplication = async (req, res, next) => {
   try {
     const application = await Application.findById(id);
     if (!application) {
-      next(error(404, "Application not found"));
+      return next(error(404, "Application not found"));
     }
+
+    // Fetch OpenShift deployments to confirm their existence
+    const openShiftDeploymentMap = await fetchOpenShiftDeployments();
 
     // Loop through each deployment and delete from OpenShift
     await Promise.all(
       application.deployments.map(async (deploymentId) => {
         const deployment = await Deployment.findById(deploymentId);
-        await deleteOpenshiftDeployment(deployment.name);
+        const openShiftData = openShiftDeploymentMap[deployment.name] || null;
+        if (openShiftData) {
+          await deleteOpenshiftDeployment(deployment.name);
+        }
       })
     );
 
@@ -144,7 +206,24 @@ export const updateApplication = async (req, res, next) => {
       next(error(404, "Application not found"));
     }
 
-    res.status(200).json(updatedApplication);
+    // Fetch OpenShift deployments after updating the application
+    const openShiftDeploymentMap = await fetchOpenShiftDeployments();
+
+    // Update related deployments with new OpenShift data
+    const updatedDeployments = updatedApplication.deployments.map((deployment) => {
+      const openShiftData = openShiftDeploymentMap[deployment.name] || null;
+      return {
+        ...deployment.toObject(),
+        openShiftDetails: openShiftData,
+      };
+    });
+
+    const response = {
+      ...updatedApplication.toObject(),
+      deployments: updatedDeployments,
+    };
+
+    res.status(200).json(response);
   } catch (error) {
     next(error);
   }

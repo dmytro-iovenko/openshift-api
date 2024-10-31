@@ -4,11 +4,23 @@ import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import { Deployment } from "../../types/Deployment";
 import Loader from "../Loader";
 
+/**
+ * Represents the props for the DeploymentTable component.
+ *
+ * @property {Deployment[]} deployments - The list of deployments to display.
+ * @property {boolean} loading - Indicates if the data is still loading.
+ */
 interface DeploymentTableProps {
   deployments: Deployment[];
   loading: boolean;
 }
 
+/**
+ * Renders a table of deployments with their details.
+ *
+ * @param {DeploymentTableProps} props - Component properties.
+ * @returns {JSX.Element} The rendered deployment table.
+ */
 const DeploymentTable: React.FC<DeploymentTableProps> = ({ deployments, loading }) => {
   const columns: GridColDef[] = [
     { field: "name", headerName: "Deployment Name", width: 200 },

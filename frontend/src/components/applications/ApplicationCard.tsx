@@ -30,6 +30,12 @@ import { TbRouteSquare2 } from "react-icons/tb";
 import stringHash from "string-hash";
 import tinycolor from "tinycolor2";
 
+/**
+ * Generates a color based on the application's name.
+ * 
+ * @param {string} name - The name of the application.
+ * @returns {string} - Hex color string.
+ */
 const getColorFromName = (name: string): string => {
   if (!name) return "#f5f5f6";
   const hash = stringHash(name);
@@ -37,13 +43,26 @@ const getColorFromName = (name: string): string => {
   return tinycolor({ h: hue, s: 70, l: 50 }).toHexString();
 };
 
+/**
+ * Represents a card displaying application information and details
+ * 
+ * @property {Application} application - The application data to display.
+ * @property {() => void} onEdit - Callback function for editing the application.
+ * @property {() => void} onDelete - Callback function for deleting the application.
+ */
 interface ApplicationCardProps {
   application: Application;
   onEdit: () => void;
   onDelete: () => void;
 }
 
-const ApplicationCard: React.FC<ApplicationCardProps> = ({ application, onEdit, onDelete }) => {
+/**
+ * ApplicationCard component to render a card displaying application information and details.
+ * 
+ * @param {ApplicationCardProps} props - The props for the component.
+ * @returns {JSX.Element} The rendered component.
+ */
+const ApplicationCard: React.FC<ApplicationCardProps> = ({ application, onEdit, onDelete }): JSX.Element => {
   const [openModal, setOpenModal] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
   const [deployments, setDeployments] = useState<any[]>([]);

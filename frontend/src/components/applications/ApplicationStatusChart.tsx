@@ -5,10 +5,21 @@ import { Deployment } from "../../types/Deployment";
 import { calculateDeploymentStatuses } from "../../helpers/statusHelpers";
 import { statusColors } from "../../helpers/colors";
 
+/**
+ * Props for the ApplicationStatusChart component.
+ *
+ * @property {Deployment[]} deployments - The list of deployments to analyze.
+ */
 interface ApplicationPieChartProps {
   deployments: Deployment[];
 }
 
+/**
+ * Renders a pie chart representing the status of application deployments.
+ *
+ * @param {ApplicationPieChartProps} props - Component properties.
+ * @returns {JSX.Element} The rendered pie chart.
+ */
 const ApplicationStatusChart: React.FC<ApplicationPieChartProps> = ({ deployments }) => {
   const statusCounts = calculateDeploymentStatuses(deployments);
 
