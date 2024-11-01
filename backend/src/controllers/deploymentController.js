@@ -1,13 +1,12 @@
 import Deployment from "../models/Deployment.js";
 import Application from "../models/Application.js";
-import error from "../utils/error.js";
 import {
   createOpenshiftDeployment,
   deleteOpenshiftDeployment,
-  getOpenshiftDeployments,
-  getOpenshiftDeploymentDetails,
   updateOpenshiftDeployment,
 } from "../services/openshiftApi.js";
+import { fetchAndUpdateDeployment, updateDeploymentStatus } from "../utils/deploymentUtils.js";
+import error from "../utils/errorUtils.js";
 
 /**
  * Creates a new deployment for a specific application.
@@ -43,6 +42,9 @@ export const createDeployment = async (req, res, next) => {
     application.deployments.push(savedDeployment._id);
     await application.save();
 
+    // Update the deployment status and other fields using the returned deployment object
+    await updateDeploymentStatus(savedDeployment, deploymentData);
+
     res.status(201).json(savedDeployment);
   } catch (error) {
     next(error);
@@ -67,24 +69,10 @@ export const getDeployments = async (req, res, next) => {
     // Fetch deployments from MongoDB
     const deployments = await Deployment.find({ applicationId: id });
 
-    // Fetch additional deployment data from OpenShift
-    const openShiftDeployments = await Promise.all(
-      deployments.map(async (deployment) => {
-        try {
-          return await getOpenshiftDeploymentDetails(deployment.name);
-        } catch (error) {
-          console.error(`Failed to fetch details for deployment ${deployment.name}: ${error.message}`);
-          return null;
-        }
-      })
+    // Fetch additional deployment data from OpenShift and combine it with the local data
+    const combinedDeployments = await Promise.all(
+      deployments.map(async (deployment) => fetchAndUpdateDeployment(deployment))
     );
-
-    // Combine the data
-    const combinedDeployments = deployments.map((deployment, index) => ({
-      ...deployment.toObject(),
-      openShiftDetails: openShiftDeployments[index],
-    }));
-
     res.status(200).json(combinedDeployments);
   } catch (error) {
     next(error);
@@ -118,9 +106,15 @@ export const updateDeployment = async (req, res, next) => {
     // Update the local deployment record in MongoDB
     deployment.name = updatedDeploymentData.metadata.name;
     deployment.image = image;
-    const updatedDeployment = await deployment.save();
+    await deployment.save();
 
-    res.status(200).json(updatedDeployment);
+    // Update deployment status with the latest data
+    const needsUpdate = Date.now() - deployment.lastUpdated > MIN_UPDATE_INTERVAL;
+    if (needsUpdate) {
+      await updateDeploymentStatus(deployment, updatedDeploymentData);
+    }
+
+    res.status(200).json(deployment);
   } catch (error) {
     next(error);
   }

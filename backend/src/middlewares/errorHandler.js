@@ -6,13 +6,13 @@
  * @param {Function} next - The next middleware function.
  */
 const errorHandler = (err, req, res, next) => {
-  const time = new Date();
-  res.status(err.status || 500).json({
-    message: err.message || "Internal Server Error",
-  });
+  const status = err.status || 500;
+  const message = err.message || "Internal Server Error";
+  res.status(status).json({ status, message });
   // Log the error for debugging
   console.error("------");
-  console.error(`${time.toLocaleString()}: ${err.stack}`);
+  console.error(`${new Date().toLocaleString()}: ${message}`);
+  console.error(err.stack);
 };
 
 export default errorHandler;

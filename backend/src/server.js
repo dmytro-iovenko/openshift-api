@@ -5,6 +5,7 @@ import errorHandler from "./middlewares/errorHandler.js";
 import connectDB from "./config.js";
 import cors from "cors";
 import "dotenv/config";
+import "./schedulers/deploymentsScheduler.js";
 
 const app = express();
 app.use(express.json());
