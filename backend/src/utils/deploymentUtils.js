@@ -27,7 +27,6 @@ export const updateDeploymentStatus = async (deployment, openShiftData) => {
 
   // Update fields
   deployment.status = status;
-  deployment.labels = openShiftData.metadata.labels || {};
   deployment.replicas = openShiftData.spec.replicas || 0;
   deployment.availableReplicas = openShiftData.status.availableReplicas || 0;
   deployment.unavailableReplicas = openShiftData.status.unavailableReplicas || 0;
@@ -35,6 +34,11 @@ export const updateDeploymentStatus = async (deployment, openShiftData) => {
   deployment.conditions = openShiftData.status.conditions || [];
   deployment.strategy = openShiftData.spec.strategy.type || "";
   deployment.revision = openShiftData.metadata.annotations["deployment.kubernetes.io/revision"] || 0;
+  deployment.labels = {
+    ...(openShiftData.metadata.labels || {}),
+    ...(openShiftData.spec.template.metadata.labels || {}),
+  };
+  deployment.selector = openShiftData.spec.selector?.matchLabels || {};
   deployment.lastUpdated = Date.now();
 
   // Update lastUpdated timestamp and sync status

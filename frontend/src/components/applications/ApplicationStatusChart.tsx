@@ -34,7 +34,15 @@ const ApplicationStatusChart: React.FC<ApplicationPieChartProps> = ({ deployment
 
   // Determine color based on health percentage
   let healthColor = statusColors.available;
-  if (healthPercentage < 50) {
+  let displayText = `${healthPercentage.toFixed(0)}`; // Default to health percentage
+  let showPercentage = true;
+
+  // Check if all deployments are pending
+  if (statusCounts.Pending === totalDeployments) {
+    displayText = "N/A";
+    healthColor = statusColors.pending;
+    showPercentage = false;
+  } else if (healthPercentage < 50) {
     healthColor = statusColors.notAvailable;
   } else if (healthPercentage < 80) {
     healthColor = statusColors.notProgressing;
@@ -52,8 +60,10 @@ const ApplicationStatusChart: React.FC<ApplicationPieChartProps> = ({ deployment
           right: "0.7rem",
           color: healthColor,
         }}>
-        <Typography variant="h5">{healthPercentage.toFixed(1)}</Typography>
-        <Typography variant="body2">%</Typography>
+        <Typography variant="h5">{displayText}</Typography>
+        <Typography variant="body2" sx={{ minWidth: "0.75rem" }}>
+          {showPercentage && "%"}
+        </Typography>
       </Box>
       <PieChart
         colors={[statusColors.pending, statusColors.notProgressing, statusColors.notAvailable, statusColors.available]}

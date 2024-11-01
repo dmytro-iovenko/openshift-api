@@ -1,96 +1,133 @@
-import React from "react";
-import { Box } from "@mui/material";
+import React, { useState } from "react";
+import { Box, Chip, IconButton, Menu, MenuItem } from "@mui/material";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
-import { Deployment } from "../../types/Deployment";
+import MoreVertIcon from '@mui/icons-material/MoreVert';
 import Loader from "../Loader";
+import { Deployment } from "../../types/Deployment";
 
-/**
- * Represents the props for the DeploymentTable component.
- *
- * @property {Deployment[]} deployments - The list of deployments to display.
- * @property {boolean} loading - Indicates if the data is still loading.
- */
 interface DeploymentTableProps {
   deployments: Deployment[];
   loading: boolean;
 }
 
-/**
- * Renders a table of deployments with their details.
- *
- * @param {DeploymentTableProps} props - Component properties.
- * @returns {JSX.Element} The rendered deployment table.
- */
 const DeploymentTable: React.FC<DeploymentTableProps> = ({ deployments, loading }) => {
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [selectedDeployment, setSelectedDeployment] = useState<Deployment | null>(null);
+
+  const calculateAge = (createdAt: string) => {
+    const createdDate = new Date(createdAt);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - createdDate.getTime()) / 1000);
+    const minutes = Math.floor(diffInSeconds / 60);
+    const hours = Math.floor(diffInSeconds / 3600);
+    const days = Math.floor(diffInSeconds / 86400);
+
+    if (diffInSeconds < 60) {
+      return `${diffInSeconds} seconds ago`;
+    } else if (minutes < 60) {
+      return `${minutes} minutes ${diffInSeconds % 60} seconds ago`;
+    } else if (hours < 24) {
+      return `${hours} hours ${minutes % 60} minutes ago`;
+    } else {
+      return `${days} days ${hours % 24} hours ago`;
+    }
+  };
+
+  const handleMenuClick = (event: React.MouseEvent<HTMLElement>, deployment: Deployment) => {
+    setAnchorEl(event.currentTarget);
+    setSelectedDeployment(deployment);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+    setSelectedDeployment(null);
+  };
+
   const columns: GridColDef[] = [
-    { field: "name", headerName: "Deployment Name", width: 200 },
-    { field: "status", headerName: "Status", width: 150 },
-    { field: "createdAt", headerName: "Created At", width: 200 },
-    { field: "updatedAt", headerName: "Updated At", width: 200 },
-    { field: "namespace", headerName: "Namespace", width: 150 },
-    { field: "replicas", headerName: "Replicas", width: 100 },
-    { field: "availableReplicas", headerName: "Available", width: 100 },
-    { field: "unavailableReplicas", headerName: "Unavailable", width: 100 },
-    { field: "image", headerName: "Image", width: 200 },
-    { field: "conditions", headerName: "Conditions", width: 200 },
+    { field: "name", headerName: "Deployment Name", flex: 1, minWidth: 150 },
+    { field: "status", headerName: "Status", flex: 1, minWidth: 150 },
+    { field: "availability", headerName: "Availability", flex: 1, minWidth: 150 },
+    {
+      field: "labels",
+      headerName: "Labels",
+      flex: 1,
+      minWidth: 150,
+      renderCell: (params) => (
+        <Box>
+          {params.value.map((label: string, index: number) => (
+            <Chip key={index} label={label} style={{ marginRight: 4 }} />
+          ))}
+        </Box>
+      ),
+    },
+    {
+      field: "podSelector",
+      headerName: "Pod Selector",
+      flex: 1,
+      minWidth: 150,
+      renderCell: (params) => (
+        <Box>
+          {params.value.map((selector: string, index: number) => (
+            <Chip key={index} label={selector} style={{ marginRight: 4 }} />
+          ))}
+        </Box>
+      ),
+    },
+    { field: "age", headerName: "Age", flex: 1, minWidth: 150 },
+    {
+      field: "actions",
+      headerName: "Actions",
+      width: 50,
+      renderCell: (params) => (
+        <IconButton onClick={(event) => handleMenuClick(event, params.row)}>
+          <MoreVertIcon />
+        </IconButton>
+      ),
+    },
   ];
 
-  const rows = deployments.map((dep) => {
-    const { spec, status } = dep.openShiftDetails;
-
-    const totalReplicas = spec.replicas;
-    const updatedReplicas = status.updatedReplicas;
-    const unavailableReplicas = status.unavailableReplicas;
-
-    const availableReplicas = updatedReplicas ? updatedReplicas - unavailableReplicas : 0;
-    const overallStatus = calculateOverallStatus(dep);
-
-    return {
-      id: dep.name,
-      name: dep.name,
-      status: overallStatus,
-      createdAt: new Date(dep.createdAt).toLocaleString(),
-      updatedAt: new Date(dep.updatedAt).toLocaleString(),
-      namespace: dep.openShiftDetails.metadata.namespace,
-      replicas: totalReplicas,
-      availableReplicas,
-      unavailableReplicas,
-      image: spec.template.spec.containers[0].image,
-      conditions: status.conditions,
-    };
-  });
+  const rows = deployments.map((dep) => ({
+    id: dep._id,
+    name: dep.name,
+    status: `${dep.availableReplicas} of ${dep.replicas} pods`,
+    availability: dep.availableReplicas > 0 ? "Available" : "Not Available",
+    labels: Object.entries(dep.labels).map(([key, value]) => `${key}=${value}`),
+    podSelector: Object.entries(dep.selector).map(([key, value]) => `${key}=${value}`),
+    age: calculateAge(dep.createdAt),
+  }));
 
   return (
-    <Box sx={{ height: 400, width: "100%" }}>
+    <Box sx={{ height: "auto", width: "100%" }}>
       {loading ? (
-        <Loader /> // Show loader while fetching data
+        <Loader />
       ) : (
-        <DataGrid
-          rows={rows}
-          columns={columns}
-          pagination
-          initialState={{
-            pagination: {
-              paginationModel: {
-                pageSize: 5,
+        <>
+          <DataGrid
+            rows={rows}
+            columns={columns}
+            pagination
+            autoHeight
+            initialState={{
+              pagination: {
+                paginationModel: {
+                  pageSize: 5,
+                },
               },
-            },
-          }}
-          pageSizeOptions={[5]}
-        />
+            }}
+            pageSizeOptions={[5]}
+          />
+          <Menu
+            anchorEl={anchorEl}
+            open={Boolean(anchorEl)}
+            onClose={handleMenuClose}
+          >
+            <MenuItem onClick={handleMenuClose}>Edit</MenuItem>
+            <MenuItem onClick={handleMenuClose}>Delete</MenuItem>
+          </Menu>
+        </>
       )}
     </Box>
   );
-};
-
-const calculateOverallStatus = (deployment: Deployment): string => {
-  const conditions = deployment.openShiftDetails.status.conditions || [];
-  const availableCondition = conditions.find((cond) => cond.type === "Available");
-  const progressingCondition = conditions.find((cond) => cond.type === "Progressing");
-
-  if (availableCondition && availableCondition.status === "False") return "Not Available";
-  if (progressingCondition && progressingCondition.status === "False") return "Not Progressing";
-  return "Available";
 };
 
 export default DeploymentTable;

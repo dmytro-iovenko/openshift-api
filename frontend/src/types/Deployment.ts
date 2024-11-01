@@ -1,3 +1,6 @@
+/**
+ * Represents details of an OpenShift deployment.
+ */
 export interface OpenShiftDetails {
   kind: string; // Type of resource, e.g., "Deployment"
   apiVersion: string; // API version, e.g., "apps/v1"
@@ -60,14 +63,29 @@ export interface OpenShiftDetails {
   };
 }
 
+/**
+ * Represents a deployment with associated metadata and status.
+ */
 export interface Deployment {
-  id: string; // Unique identifier for the deployment
+  _id: string; // Unique identifier from MongoDB
   name: string; // Name of the deployment
   status: string; // Current status of the deployment (e.g., Running, Failed)
   image: string; // Image used for the deployment
-  // replicas: number;        // Number of replicas
   createdAt: string; // Creation timestamp
   updatedAt: string; // Last updated timestamp
   applicationId: string; // ID of the application this deployment belongs to
-  openShiftDetails: OpenShiftDetails; // Additional details specific to OpenShift deployments
+  replicas: number; // Total desired replicas
+  availableReplicas: number; // Available replicas
+  unavailableReplicas: number; // Unavailable replicas
+  updatedReplicas: number; // Updated replicas
+  conditions: Array<{
+    type: string; // Type of condition (e.g., "Available", "Progressing")
+    status: string; // Status of the condition (e.g., "True", "False")
+    lastTransitionTime: string; // Last time the condition was updated
+    reason: string; // Reason for the condition
+    message: string; // Human-readable message indicating details about the condition
+  }>; // Conditions for the deployment
+  labels: Record<string, string>; // Labels for the deployment
+  selector: Record<string, string>; // Pod selector for the deployment
+  age: string; // Age of the deployment, typically calculated as time since created
 }
