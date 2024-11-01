@@ -6,7 +6,7 @@ import {
   getOpenshiftDeployments,
 } from "../services/openshiftApi.js";
 import { fetchApplicationsWithDeployments } from "../utils/applicationUtils.js";
-import { fetchAndUpdateDeploymentById } from "../utils/deploymentUtils.js";
+import { fetchAndUpdateDeploymentById, updateDeploymentStatus } from "../utils/deploymentUtils.js";
 import error from "../utils/errorUtils.js";
 
 /**
@@ -90,6 +90,16 @@ export const getApplications = async (req, res, next) => {
   }
 };
 
+/**
+ * Retrieves a specific application by ID from the database.
+ *
+ * @async
+ * @function getApplication
+ * @param {Object} req - The request object containing the application ID.
+ * @param {Object} res - The response object to send the results.
+ * @param {Function} next - The next middleware function.
+ * @returns {Promise<void>} - Responds with the application details including its deployments.
+ */
 export const getApplication = async (req, res, next) => {
   const { id } = req.params;
 
@@ -100,7 +110,9 @@ export const getApplication = async (req, res, next) => {
       return next(error(404, "Application not found"));
     }
 
-    const updatedDeployments = await Promise.all(application.deployments.map(deploymentId => fetchAndUpdateDeploymentById(deploymentId, true)));
+    const updatedDeployments = await Promise.all(
+      application.deployments.map((deploymentId) => fetchAndUpdateDeploymentById(deploymentId, true))
+    );
     res.status(200).json({ ...application.toObject(), deployments: updatedDeployments });
   } catch (error) {
     next(error);
@@ -180,54 +192,34 @@ export const updateApplication = async (req, res, next) => {
       next(error(404, "Application not found"));
     }
 
-    // Fetch OpenShift deployments after updating the application
-    const openShiftDeploymentMap = await fetchOpenShiftDeployments();
+    res.status(200).json(updatedApplication);
 
-    // Update related deployments with new OpenShift data
-    const updatedDeployments = await Promise.all(
-      updatedApplication.deployments.map(async (deploymentId) => {
-        const deployment = await Deployment.findById(deploymentId);
-        const openShiftData = openShiftDeploymentMap[deployment.name] || null;
+    // // Fetch OpenShift deployments after updating the application
+    // const openShiftDeploymentMap = await fetchOpenShiftDeployments();
 
-        // Check if we need to refresh the status
-        const needsUpdate = Date.now() - deployment.lastUpdated > MIN_UPDATE_INTERVAL;
-        if (needsUpdate && openShiftData) {
-          updateDeploymentStatus(deployment, openShiftData);
-          await deployment.save();
-        }
+    // // Update related deployments with new OpenShift data
+    // const updatedDeployments = await Promise.all(
+    //   updatedApplication.deployments.map(async (deploymentId) => {
+    //     const deployment = await Deployment.findById(deploymentId);
+    //     const openShiftData = openShiftDeploymentMap[deployment.name] || null;
 
-        return deployment;
-      })
-    );
+    //     // Check if we need to refresh the status
+    //     if (needsUpdate(deployment) && openShiftData) {
+    //       await updateDeploymentStatus(deployment, openShiftData);
+    //       await deployment.save();
+    //     }
 
-    const response = {
-      ...updatedApplication.toObject(),
-      deployments: updatedDeployments,
-    };
+    //     return deployment;
+    //   })
+    // );
 
-    res.status(200).json(response);
+    // const response = {
+    //   ...updatedApplication.toObject(),
+    //   deployments: updatedDeployments,
+    // };
+
+    // res.status(200).json(response);
   } catch (error) {
     next(error);
   }
 };
-
-/**
- * Retrieves deployments associated with a specific application.
- *
- * @async
- * @function getDeploymentsByApplication
- * @param {Object} req - The request object.
- * @param {Object} res - The response object.
- * @param {Function} next - The next middleware function.
- * @returns {Promise<void>} - Responds with a list of deployments.
- */
-// export const getDeploymentsByApplication = async (req, res, next) => {
-//   const { id } = req.params;
-
-//   try {
-//     const deployments = await Deployment.find({ applicationId: id });
-//     res.status(200).json(deployments);
-//   } catch (error) {
-//     next(error);
-//   }
-// };

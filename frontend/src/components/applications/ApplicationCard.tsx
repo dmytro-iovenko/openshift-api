@@ -18,8 +18,12 @@ import {
   ListItemAvatar,
   ListItemText,
   Typography,
+  Menu,
+  MenuItem,
+  ButtonGroup,
 } from "@mui/material";
 import CachedIcon from "@mui/icons-material/Cached";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { Application } from "../../types/Application";
 import { fetchDeployments } from "../../services/api";
 import ApplicationDetails from "./ApplicationDetails";
@@ -32,7 +36,7 @@ import tinycolor from "tinycolor2";
 
 /**
  * Generates a color based on the application's name.
- * 
+ *
  * @param {string} name - The name of the application.
  * @returns {string} - Hex color string.
  */
@@ -44,8 +48,8 @@ const getColorFromName = (name: string): string => {
 };
 
 /**
- * Represents a card displaying application information and details
- * 
+ * Represents a card displaying application information and details.
+ *
  * @property {Application} application - The application data to display.
  * @property {() => void} onEdit - Callback function for editing the application.
  * @property {() => void} onDelete - Callback function for deleting the application.
@@ -58,7 +62,7 @@ interface ApplicationCardProps {
 
 /**
  * ApplicationCard component to render a card displaying application information and details.
- * 
+ *
  * @param {ApplicationCardProps} props - The props for the component.
  * @returns {JSX.Element} The rendered component.
  */
@@ -67,6 +71,7 @@ const ApplicationCard: React.FC<ApplicationCardProps> = ({ application, onEdit, 
   const [activeTab, setActiveTab] = useState(0);
   const [deployments, setDeployments] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   useEffect(() => {
     if (openModal) {
@@ -86,6 +91,7 @@ const ApplicationCard: React.FC<ApplicationCardProps> = ({ application, onEdit, 
     setActiveTab(newValue);
   };
 
+  // Fetch the deployments for the application
   const fetchApplicationDeployments = async () => {
     setLoading(true);
     try {
@@ -96,6 +102,16 @@ const ApplicationCard: React.FC<ApplicationCardProps> = ({ application, onEdit, 
     } finally {
       setLoading(false);
     }
+  };
+
+  // Handle opening the menu for Edit and Delete actions
+  const handleActionsMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  // Close the menu
+  const handleActionsMenuClose = () => {
+    setAnchorEl(null);
   };
 
   const indicatorColor = getColorFromName(application.name);
@@ -159,17 +175,35 @@ const ApplicationCard: React.FC<ApplicationCardProps> = ({ application, onEdit, 
           <Button variant="outlined" color="secondary" size="small" onClick={handleOpenModal}>
             View details
           </Button>
-          <Button size="small" color="primary" onClick={onEdit}>
-            Edit
-          </Button>
-          <Button size="small" color="secondary" onClick={onDelete}>
-            Delete
-          </Button>
-          <IconButton aria-label="Refresh">
-            <CachedIcon />
-          </IconButton>
+          <ButtonGroup>
+            <IconButton onClick={fetchApplicationDeployments}>
+              <CachedIcon />
+            </IconButton>
+            <IconButton onClick={handleActionsMenuOpen}>
+              <MoreVertIcon />
+            </IconButton>
+          </ButtonGroup>
         </CardActions>
       </Card>
+
+      {/* Menu for Edit and Delete actions */}
+      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleActionsMenuClose}>
+        <MenuItem
+          onClick={() => {
+            onEdit();
+            handleActionsMenuClose();
+          }}>
+          Edit
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            onDelete();
+            handleActionsMenuClose();
+          }}
+          sx={{ color: "red" }}>
+          Delete
+        </MenuItem>
+      </Menu>
 
       <Dialog open={openModal} onClose={handleCloseModal} fullWidth maxWidth="md">
         <DialogTitle>{application.name} Details</DialogTitle>

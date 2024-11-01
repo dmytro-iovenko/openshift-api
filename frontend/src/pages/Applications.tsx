@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
-// import { Container, Grid, Button, Dialog, DialogActions, DialogContent, DialogTitle, Tab, Tabs } from "@mui/material";
-import { Button, Typography, Box } from "@mui/material";
+import { Button, Typography, Box, Drawer } from "@mui/material";
 import Grid from "@mui/material/Grid2";
 import AddCircleTwoToneIcon from "@mui/icons-material/AddCircleTwoTone";
 import Loader from "../components/Loader";
@@ -11,6 +10,7 @@ import { Application } from "../types/Application";
 
 /**
  * Applications component to fetch and display a list of applications.
+ * Allows creation, editing, and deletion of applications.
  * @returns {JSX.Element} The applications listing UI or loading state.
  */
 const Applications: React.FC = (): JSX.Element => {
@@ -18,9 +18,6 @@ const Applications: React.FC = (): JSX.Element => {
   const [currentApplication, setCurrentApplication] = useState<Application | null>(null);
   const [openForm, setOpenForm] = useState(false);
   const [loading, setLoading] = useState<boolean>(true);
-  //   const [openDetails, setOpenDetails] = useState(false);
-  //   const [tabIndex, setTabIndex] = useState(0);
-  //   const [deployments, setDeployments] = useState<Deployment[]>([]);
 
   /**
    * Fetches applications from the API when the component mounts.
@@ -65,6 +62,7 @@ const Applications: React.FC = (): JSX.Element => {
         )
       );
     } else {
+      // Create a new application
       const newApp = await createApplication(data);
       setApplications([...applications, newApp]);
     }
@@ -97,27 +95,6 @@ const Applications: React.FC = (): JSX.Element => {
     setOpenForm(false);
   };
 
-  //   const handleDetailsOpen = async (application: Application) => {
-  //     setCurrentApplication(application);
-  //     setOpenDetails(true);
-  //     try {
-  //       const deps = await fetchDeployments(application._id);
-  //       setDeployments(deps);
-  //     } catch (error) {
-  //       console.error("Failed to fetch deployments:", error);
-  //       setDeployments([]);
-  //     }
-  //   };
-
-  //   const handleDetailsClose = () => {
-  //     setOpenDetails(false);
-  //     setCurrentApplication(null);
-  //   };
-
-  //   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
-  //     setTabIndex(newValue);
-  //   };
-
   if (loading) {
     return <Loader />; // Show loader while fetching data
   }
@@ -143,21 +120,23 @@ const Applications: React.FC = (): JSX.Element => {
           </Grid>
         ))}
       </Grid>
-      <ApplicationForm
-        open={openForm}
-        onClose={handleCloseForm}
-        onSubmit={handleFormSubmit}
-        initialData={
-          currentApplication
-            ? {
-                name: currentApplication.name,
-                description: currentApplication.description,
-                image: currentApplication.image,
-              }
-            : undefined
-        }
-        isEditMode={!!currentApplication} // Set to true if editing, false if creating
-      />
+      <Drawer anchor="right" open={openForm} onClose={handleCloseForm}>
+        <ApplicationForm
+          open={openForm}
+          onClose={handleCloseForm}
+          onSubmit={handleFormSubmit}
+          initialData={
+            currentApplication
+              ? {
+                  name: currentApplication.name,
+                  description: currentApplication.description,
+                  image: currentApplication.image,
+                }
+              : undefined
+          }
+          isEditMode={!!currentApplication}
+        />
+      </Drawer>
     </Grid>
   );
 };

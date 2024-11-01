@@ -1,19 +1,32 @@
 import React, { useState } from "react";
 import { Box, Chip, IconButton, Menu, MenuItem } from "@mui/material";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
-import MoreVertIcon from '@mui/icons-material/MoreVert';
+import MoreVertIcon from "@mui/icons-material/MoreVert";
 import Loader from "../Loader";
 import { Deployment } from "../../types/Deployment";
 
+/**
+ * Represents the props for the DeploymentTable component.
+ *
+ * @property {Deployment[]} deployments - The list of deployments to display.
+ * @property {boolean} loading - Indicates if the data is still loading.
+ */
 interface DeploymentTableProps {
   deployments: Deployment[];
   loading: boolean;
 }
 
+/**
+ * Renders a table of deployments with their details.
+ *
+ * @param {DeploymentTableProps} props - Component properties.
+ * @returns {JSX.Element} The rendered deployment table.
+ */
 const DeploymentTable: React.FC<DeploymentTableProps> = ({ deployments, loading }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedDeployment, setSelectedDeployment] = useState<Deployment | null>(null);
 
+  // Calculates the age of the deployment based on the creation date.
   const calculateAge = (createdAt: string) => {
     const createdDate = new Date(createdAt);
     const now = new Date();
@@ -33,16 +46,19 @@ const DeploymentTable: React.FC<DeploymentTableProps> = ({ deployments, loading 
     }
   };
 
+  // Handles the opening of the action menu
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>, deployment: Deployment) => {
     setAnchorEl(event.currentTarget);
     setSelectedDeployment(deployment);
   };
 
+  // Closes the action menu
   const handleMenuClose = () => {
     setAnchorEl(null);
     setSelectedDeployment(null);
   };
 
+  // Define columns for the data grid
   const columns: GridColDef[] = [
     { field: "name", headerName: "Deployment Name", flex: 1, minWidth: 150 },
     { field: "status", headerName: "Status", flex: 1, minWidth: 150 },
@@ -54,8 +70,8 @@ const DeploymentTable: React.FC<DeploymentTableProps> = ({ deployments, loading 
       minWidth: 150,
       renderCell: (params) => (
         <Box>
-          {params.value.map((label: string, index: number) => (
-            <Chip key={index} label={label} style={{ marginRight: 4 }} />
+          {params.value.map((label: string) => (
+            <Chip key={label} label={label} style={{ marginRight: 4 }} />
           ))}
         </Box>
       ),
@@ -67,8 +83,8 @@ const DeploymentTable: React.FC<DeploymentTableProps> = ({ deployments, loading 
       minWidth: 150,
       renderCell: (params) => (
         <Box>
-          {params.value.map((selector: string, index: number) => (
-            <Chip key={index} label={selector} style={{ marginRight: 4 }} />
+          {params.value.map((selector: string) => (
+            <Chip key={selector} label={selector} style={{ marginRight: 4 }} />
           ))}
         </Box>
       ),
@@ -86,6 +102,7 @@ const DeploymentTable: React.FC<DeploymentTableProps> = ({ deployments, loading 
     },
   ];
 
+  // Map deployments to rows for the data grid
   const rows = deployments.map((dep) => ({
     id: dep._id,
     name: dep.name,
@@ -116,11 +133,7 @@ const DeploymentTable: React.FC<DeploymentTableProps> = ({ deployments, loading 
             }}
             pageSizeOptions={[5]}
           />
-          <Menu
-            anchorEl={anchorEl}
-            open={Boolean(anchorEl)}
-            onClose={handleMenuClose}
-          >
+          <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
             <MenuItem onClick={handleMenuClose}>Edit</MenuItem>
             <MenuItem onClick={handleMenuClose}>Delete</MenuItem>
           </Menu>
