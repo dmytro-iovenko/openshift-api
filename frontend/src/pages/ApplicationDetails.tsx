@@ -3,32 +3,37 @@ import { useParams } from "react-router-dom";
 import { Typography, Box, Tabs, Tab } from "@mui/material";
 import { Application } from "../types/Application";
 import { fetchApplicationBySlug, fetchDeployments } from "../services/api";
+import { useBreadcrumbs } from "../context/BreadcrumbsContext";
 import Loader from "../components/Loader";
-import BreadcrumbsComponent from "../components/Breadcrumbs";
 import ApplicationInfo from "../components/applications/ApplicationInfo";
 import DeploymentTable from "../components/deployments/DeploymentTable";
 
 /**
- * Represents detailed information about the application.
- *
- * @property {Application} application - The application data to display.
- */
-interface ApplicationDetailsProps {
-  // application: Application;
-}
-
-/**
  * Renders detailed information about the application.
- *
  * @returns {JSX.Element} The rendered component.
  */
-const ApplicationDetails: React.FC<ApplicationDetailsProps> = (): JSX.Element => {
+const ApplicationDetails = (): JSX.Element => {
   const { slug } = useParams<{ slug: string }>();
+  const { setBreadcrumbs } = useBreadcrumbs();
   const [application, setApplication] = useState<Application | null>(null);
   const [deployments, setDeployments] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(true);
 
+  /**
+   * Sets the breadcrumbs when the component mounts.
+   */
+  useEffect(() => {
+    const breadcrumbs = [
+      { label: "Applications", path: "/" },
+      { label: slug || "Loading...", path: "#" },
+    ];
+    setBreadcrumbs(breadcrumbs);
+  }, [slug, setBreadcrumbs]);
+
+  /**
+   * Fetches application details and deployments when the component mounts.
+   */
   useEffect(() => {
     const getApplication = async () => {
       try {
@@ -66,7 +71,6 @@ const ApplicationDetails: React.FC<ApplicationDetailsProps> = (): JSX.Element =>
 
   return (
     <Box p={3}>
-      <BreadcrumbsComponent applicationName={application.name} />
       <Typography variant="h4">{application.name}</Typography>
       <Typography gutterBottom>{application.description}</Typography>
 

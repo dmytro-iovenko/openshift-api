@@ -5,6 +5,7 @@ import theme from "./themes/theme";
 import MainLayout from "./layouts/MainLayout";
 import Applications from "./pages/Applications";
 import ApplicationDetails from "./pages/ApplicationDetails";
+import { BreadcrumbsProvider } from "./context/BreadcrumbsContext";
 
 /**
  * Main application component that sets up the theme and layout.
@@ -12,14 +13,16 @@ import ApplicationDetails from "./pages/ApplicationDetails";
  */
 const App: React.FC = (): JSX.Element => (
   <ThemeProvider theme={theme("light")}>
-    <Router>
-      <MainLayout>
-        <Routes>
-          <Route path="/" element={<Applications />} />
-          <Route path="/applications/:slug" element={<ApplicationDetails />} />
-        </Routes>
-      </MainLayout>
-    </Router>
+    <BreadcrumbsProvider>
+      <Router>
+        <MainLayout>
+          <Routes>
+            <Route path="/" element={<Applications />} />
+            <Route path="/applications/:slug" element={<ApplicationDetails />} />
+          </Routes>
+        </MainLayout>
+      </Router>
+    </BreadcrumbsProvider>
   </ThemeProvider>
 );
 

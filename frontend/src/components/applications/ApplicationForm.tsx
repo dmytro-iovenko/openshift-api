@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { TextField, Button, Box, Typography, Divider } from "@mui/material";
+import { useNavigate } from "react-router-dom";
+import ConfirmationDialog from "../ConfirmationDialog";
 
 /**
  * Represents the application form.
@@ -9,13 +11,16 @@ import { TextField, Button, Box, Typography, Divider } from "@mui/material";
  * @property {(data: { name: string; description?: string; image?: string }) => Promise<void>} onSubmit - Callback function to handle form submission.
  * @property {{ name: string; description?: string; image?: string }} [initialData] - Initial data for the form when editing.
  * @property {boolean} isEditMode - Flag indicating if the form is in edit mode.
+ * @property {(hasUnsavedChanges: boolean) => void} setHasUnsavedChanges - Callback function to set the unsaved changes flag.
  */
 interface ApplicationFormProps {
   open: boolean;
-  onClose: () => void;
+  onClose: (forceClose?: boolean) => void;
   onSubmit: (data: { name: string; description?: string; image?: string }) => Promise<void>;
-  initialData?: { name: string; description?: string; image?: string };
+  initialData?: { name: string; description?: string; image?: string; slug: string };
   isEditMode: boolean;
+  setHasUnsavedChanges: (hasUnsavedChanges: boolean) => void;
+  hasUnsavedChanges: boolean;
 }
 
 /**
@@ -27,6 +32,7 @@ interface ApplicationFormProps {
  * @param {Function} props.onSubmit - Callback function to handle form submission.
  * @param {Object} props.initialData - Initial data for the form when editing.
  * @param {boolean} props.isEditMode - Flag indicating if the form is in edit mode.
+ * @param {Function} props.setHasUnsavedChanges - Callback function to set the unsaved changes flag.
  * @returns {JSX.Element} The rendered application form.
  */
 const ApplicationForm: React.FC<ApplicationFormProps> = ({
@@ -35,42 +41,50 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({
   onSubmit,
   initialData,
   isEditMode,
+  setHasUnsavedChanges,
+  hasUnsavedChanges,
 }): JSX.Element => {
+  const navigate = useNavigate();
+  const applicationSlug = initialData?.slug || "";
   const [formValues, setFormValues] = useState({
     name: initialData?.name || "",
     description: initialData?.description || "",
     image: initialData?.image || "",
   });
   const [errors, setErrors] = useState<{ name?: string; image?: string }>({});
-  const [isModified, setIsModified] = useState(false);
+  const [confirmClose, setConfirmClose] = useState(false);
+  const [confirmNavigate, setConfirmNavigate] = useState(false);
 
   /**
    * Effect to reset form fields and errors when initial data changes or when the form is opened
    */
   useEffect(() => {
-    if (open) {
+    if (open && !hasUnsavedChanges) {
       setFormValues({
         name: initialData?.name || "",
         description: initialData?.description || "",
         image: initialData?.image || "",
       });
       setErrors({});
-      setIsModified(false);
+      setHasUnsavedChanges(false);
     }
-  }, [initialData, open]);
+  }, [initialData, open, setHasUnsavedChanges]);
 
   /**
    * Handles change events for form fields and marks as modified when any field changes
    */
   const handleChange = (field: keyof typeof formValues, value: string) => {
-    setFormValues((prev) => ({ ...prev, [field]: value }));
-    // Check if any field is different from the initial values
-    const updatedValues = { ...formValues, [field]: value };
-    setIsModified(
-      updatedValues.name !== (initialData?.name ?? "") ||
+    setFormValues((prev) => {
+      const updatedValues = { ...prev, [field]: value };
+      // Check if any field is different from the initial values
+      const modified =
+        updatedValues.name !== (initialData?.name ?? "") ||
         updatedValues.description !== (initialData?.description ?? "") ||
-        updatedValues.image !== (initialData?.image ?? "")
-    );
+        updatedValues.image !== (initialData?.image ?? "");
+      setHasUnsavedChanges(modified);
+      console.log(updatedValues);
+      return updatedValues;
+    });
   };
 
   /**
@@ -100,8 +114,66 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({
       name: formValues.name,
       description: formValues.description,
       image: isEditMode ? undefined : formValues.image,
+    }).then(() => {
+      setHasUnsavedChanges(false);
+      onClose(true);
     });
-    onClose();
+  };
+
+  /**
+   * Handles the request to close the form.
+   * If there are unsaved changes, a confirmation dialog is shown.
+   */
+  const handleCloseRequest = () => {
+    if (hasUnsavedChanges) {
+      setConfirmClose(true);
+    } else {
+      onClose();
+    }
+  };
+
+  /**
+   * Confirms the closing of the form, proceeding to close it.
+   */
+  const handleConfirmClose = () => {
+    setConfirmClose(false);
+    setHasUnsavedChanges(false);
+    onClose(true);
+  };
+
+  /**
+   * Cancels the close request, keeping the form open.
+   */
+  const handleCancelClose = () => {
+    setConfirmClose(false);
+  };
+
+  /**
+   * Handles navigation to the application details page.
+   * If there are unsaved changes, a confirmation dialog is shown.
+   */
+  const handleNavigate = () => {
+    if (hasUnsavedChanges) {
+      setConfirmNavigate(true); // Show confirmation dialog for navigation
+    } else {
+      navigate(`/applications/${applicationSlug}`);
+    }
+  };
+
+  /**
+   * Confirms the navigation to the application details page.
+   */
+  const handleConfirmNavigate = () => {
+    setConfirmNavigate(false);
+    setHasUnsavedChanges(false);
+    navigate(`/applications/${applicationSlug}`);
+  };
+
+  /**
+   * Cancels the navigation request, keeping the form open.
+   */
+  const handleCancelNavigate = () => {
+    setConfirmNavigate(false);
   };
 
   return (
@@ -146,8 +218,8 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({
         />
       )}
       <Box sx={{ mt: 1, display: "flex", justifyContent: "space-between" }}>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button variant="contained" onClick={handleSubmit} disabled={!isModified}>
+        <Button onClick={handleCloseRequest}>Cancel</Button>
+        <Button onClick={handleSubmit} disabled={!hasUnsavedChanges}>
           {isEditMode ? "Save" : "Create"}
         </Button>
       </Box>
@@ -162,12 +234,30 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({
             <Typography variant="body2" gutterBottom>
               You can access more detailed options to modify the application directly.
             </Typography>
-            <Button variant="contained" onClick={() => console.log("View Details Clicked")} fullWidth>
+            <Button variant="outlined" onClick={handleNavigate} fullWidth>
               View/Edit Application Info
             </Button>
           </Box>
         </>
       )}
+
+      {/* Confirmation Dialog for closing the form */}
+      <ConfirmationDialog
+        title="Unsaved Changes"
+        message="Are you sure you want to close the form? Your changes will be lost."
+        open={confirmClose}
+        onCancel={handleCancelClose}
+        onConfirm={handleConfirmClose}
+      />
+
+      {/* Confirmation Dialog for navigation */}
+      <ConfirmationDialog
+        title="Unsaved Changes"
+        message="Are you sure you want to navigate away? Your changes will be lost."
+        open={confirmNavigate}
+        onCancel={handleCancelNavigate}
+        onConfirm={handleConfirmNavigate}
+      />
     </Box>
   );
 };

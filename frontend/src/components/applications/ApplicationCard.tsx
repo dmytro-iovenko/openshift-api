@@ -1,16 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Card,
   CardContent,
   CardActions,
   Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Tabs,
-  Tab,
   Box,
   Divider,
   IconButton,
@@ -26,9 +20,6 @@ import {
 import CachedIcon from "@mui/icons-material/Cached";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { Application } from "../../types/Application";
-import { fetchDeployments } from "../../services/api";
-import ApplicationDetails from "../../pages/ApplicationDetails";
-import DeploymentTable from "../deployments/DeploymentTable";
 import ApplicationStatusChart from "./ApplicationStatusChart";
 import { LiaCubeSolid, LiaCubesSolid } from "react-icons/lia";
 import { TbRouteSquare2 } from "react-icons/tb";
@@ -72,16 +63,23 @@ const ApplicationCard: React.FC<ApplicationCardProps> = ({ application, onEdit, 
 
   const navigate = useNavigate();
 
+  /**
+   * Handle navigating to the application details page
+   */
   const handleViewDetails = () => {
     navigate(`/applications/${application.slug}`);
   };
 
-  // Handle opening the menu for Edit and Delete actions
+  /**
+   * Handle opening the menu for Edit and Delete actions
+   */
   const handleActionsMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
 
-  // Close the menu
+  /**
+   *  Handle closing the menu for Edit and Delete actions
+   */
   const handleActionsMenuClose = () => {
     setAnchorEl(null);
   };
@@ -144,7 +142,7 @@ const ApplicationCard: React.FC<ApplicationCardProps> = ({ application, onEdit, 
         </CardContent>
         <Divider />
         <CardActions sx={{ justifyContent: "space-between", p: 2 }}>
-          <Button variant="outlined" color="secondary" size="small" onClick={handleViewDetails}>
+          <Button variant="outlined" size="small" onClick={handleViewDetails}>
             View details
           </Button>
           <ButtonGroup>

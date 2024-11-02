@@ -1,7 +1,7 @@
 import Application from "../models/Application.js";
 import Deployment from "../models/Deployment.js";
 import error from "../utils/errorUtils.js";
-import { fetchApplicationsWithDeployments, generateUniqueSlug } from "../utils/applicationUtils.js";
+import { fetchApplicationsWithDeployments, generateBaseSlug, generateUniqueSlug } from "../utils/applicationUtils.js";
 import {
   fetchAndUpdateDeploymentById,
   generateUniqueDeploymentName,
@@ -52,7 +52,8 @@ export const createApplication = async (req, res, next) => {
     const savedApplication = await application.save();
 
     // Create deployment in OpenShift and link it to the application
-    const uniqueDeploymentName = await generateUniqueDeploymentName(savedApplication.slug);
+    const slug = await generateBaseSlug(savedApplication.name);
+    const uniqueDeploymentName = await generateUniqueDeploymentName(slug);
     const deployment = await createOpenshiftDeployment(uniqueDeploymentName, image);
     const deploymentDoc = new Deployment({
       applicationId: savedApplication._id,

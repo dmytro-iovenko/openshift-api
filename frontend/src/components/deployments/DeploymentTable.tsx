@@ -26,7 +26,9 @@ const DeploymentTable: React.FC<DeploymentTableProps> = ({ deployments, loading 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedDeployment, setSelectedDeployment] = useState<Deployment | null>(null);
 
-  // Calculates the age of the deployment based on the creation date.
+  /**
+   * Calculates the age of a deployment based on its creation date.
+   */
   const calculateAge = (createdAt: string) => {
     const createdDate = new Date(createdAt);
     const now = new Date();
@@ -46,13 +48,17 @@ const DeploymentTable: React.FC<DeploymentTableProps> = ({ deployments, loading 
     }
   };
 
-  // Handles the opening of the action menu
+  /**
+   * Handles the opening of the action menu
+   */
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>, deployment: Deployment) => {
     setAnchorEl(event.currentTarget);
     setSelectedDeployment(deployment);
   };
 
-  // Closes the action menu
+  /**
+   * Handles the closing of the action menu
+   */
   const handleMenuClose = () => {
     setAnchorEl(null);
     setSelectedDeployment(null);
@@ -93,7 +99,7 @@ const DeploymentTable: React.FC<DeploymentTableProps> = ({ deployments, loading 
     {
       field: "actions",
       headerName: "Actions",
-      flex: 1, 
+      flex: 1,
       minWidth: 50,
       renderCell: (params) => (
         <IconButton onClick={(event) => handleMenuClick(event, params.row)}>
@@ -124,7 +130,6 @@ const DeploymentTable: React.FC<DeploymentTableProps> = ({ deployments, loading 
             rows={rows}
             columns={columns}
             pagination
-            autoHeight
             initialState={{
               pagination: {
                 paginationModel: {

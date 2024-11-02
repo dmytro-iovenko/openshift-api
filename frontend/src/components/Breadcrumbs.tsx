@@ -3,23 +3,40 @@ import { Link } from "react-router-dom";
 import { Breadcrumbs, Typography } from "@mui/material";
 
 /**
+ * Represents a breadcrumb item.
+ */
+interface Breadcrumb {
+  label: string;
+  path?: string;
+}
+
+/**
  * Represents the breadcrumbs component.
  **/
 interface BreadcrumbsComponentProps {
-  applicationName: string; // The name of the application.
+  breadcrumbs: Breadcrumb[];
 }
 
 /**
  * Represents the breadcrumbs component.
  *
- * @param {string} applicationName - The name of the application.
+ * @param {Breadcrumb[]} breadcrumbs - The breadcrumbs to display.
  * @returns {JSX.Element} The rendered breadcrumbs.
  **/
-const BreadcrumbsComponent: React.FC<BreadcrumbsComponentProps> = ({ applicationName }): JSX.Element => {
+const BreadcrumbsComponent: React.FC<BreadcrumbsComponentProps> = ({ breadcrumbs }): JSX.Element => {
   return (
     <Breadcrumbs aria-label="breadcrumb">
-      <Link to="/">Applications</Link>
-      <Typography color="text.primary">{applicationName}</Typography>
+      {breadcrumbs.map((breadcrumb, index) =>
+        index === breadcrumbs.length - 1 ? (
+          <Typography key={breadcrumb.path} color="text.primary">
+            {breadcrumb.label}
+          </Typography>
+        ) : (
+          <Link key={breadcrumb.path} to={breadcrumb.path || "#"}>
+            {breadcrumb.label}
+          </Link>
+        )
+      )}
     </Breadcrumbs>
   );
 };

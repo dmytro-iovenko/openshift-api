@@ -28,13 +28,21 @@ export const fetchApplicationsWithDeployments = async () => {
 };
 
 /**
+ * Generates a base slug for the application.
+ *
+ * @param {string} name - The name of the application.
+ * @returns {Promise<string>} - A promise that resolves to a slug.
+ */
+export const generateBaseSlug = async (name) => slugify(name, { lower: true, strict: true });
+
+/**
  * Generates a unique slug for the application.
  *
  * @param {string} name - The name of the application.
  * @returns {Promise<string>} - A promise that resolves to a unique slug.
  */
 export const generateUniqueSlug = async (name) => {
-  const baseSlug = slugify(name, { lower: true, strict: true });
+  const baseSlug = generateBaseSlug(name);
   let uniqueSlug = baseSlug;
 
   // Check if the slug already exists
