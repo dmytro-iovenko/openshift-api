@@ -4,7 +4,7 @@ import Grid from "@mui/material/Grid2";
 import AddCircleTwoToneIcon from "@mui/icons-material/AddCircleTwoTone";
 import ApplicationCard from "../components/applications/ApplicationCard";
 import ApplicationForm from "../components/applications/ApplicationForm";
-import ConfirmationDialog from "../components/ConfirmationDialog";
+import ManagedDialogs from "../components/ManagedDialogs";
 import Loader from "../components/Loader";
 import { createApplication, fetchApplications, deleteApplication, updateApplication } from "../services/api";
 import { Application } from "../types/Application";
@@ -22,8 +22,6 @@ const Applications: React.FC = (): JSX.Element => {
   const [openForm, setOpenForm] = useState(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [confirmClose, setConfirmClose] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   /**
    * Sets the breadcrumbs when the component mounts.
@@ -38,7 +36,7 @@ const Applications: React.FC = (): JSX.Element => {
    */
   useEffect(() => {
     let isMounted = true;
-    
+
     const getApplications = async () => {
       try {
         console.log("Fetching applications...");
@@ -85,15 +83,6 @@ const Applications: React.FC = (): JSX.Element => {
   };
 
   /**
-   * Handles the deletion of an application.
-   * @param {string} id - The ID of the application to delete.
-   * @returns {Promise<void>} A promise that resolves when the application is deleted.
-   */
-  const handleDelete = async (id: string): Promise<void> => {
-    setConfirmDelete(id);
-  };
-
-  /**
    * Opens the form for editing an existing application.
    * @param {Application} application - The application to edit.
    */
@@ -103,43 +92,41 @@ const Applications: React.FC = (): JSX.Element => {
   };
 
   /**
-   * Closes the form and resets state variables
-   * when there are unsaved changes in the form.
+   * Handles the confirmation dialog for deleting an application.
+   * @param {string} id - The ID of the application to delete.
    */
-  const handleCloseForm = (forceClose = false) => {
-    if (hasUnsavedChanges && !forceClose) {
-      setConfirmClose(true);
-    } else {
-      setOpenForm(false);
-      setCurrentApplication(null);
-    }
-  };
-
-  /**
-   * Handles the confirmation to close the form.
-   * Closes the form and resets state variables.
-   */
-  const handleConfirmClose = () => {
-    setHasUnsavedChanges(false);
-    setOpenForm(false);
-    setConfirmClose(false);
-    setCurrentApplication(null);
-  };
-
-  /**
-   * Handles the cancellation of the close form confirmation
-   * dialog and closes the dialog.
-   */
-  const handleCancelClose = () => {
-    setConfirmClose(false);
-  };
-
-  const handleConfirmDelete = async (id: string) => {
+  const handleDelete = async (id: string) => {
     if (id) {
       await deleteApplication(id);
       setApplications(applications.filter((app) => app._id !== id));
-      setConfirmDelete(null);
     }
+  };
+
+  /**
+   * Handles the request to close the form when clicking on drawer overlay.
+   * If there are unsaved changes, a confirmation dialog is shown.
+   * @param {function} showDialog - Function to show a dialog.
+   */
+  const handleClose = (showDialog: (dialogType: string, confirmCallback: () => void) => void) => {
+    if (hasUnsavedChanges) {
+      showDialog("confirmClose", () => {
+        setHasUnsavedChanges(false);
+        handleCloseForm(true);
+      });
+    } else {
+      handleCloseForm();
+    }
+  };
+
+  /**
+   * Closes the form and resets state variables.
+   * @param {boolean} forceClose - Whether to force close the form without checking for unsaved changes.
+   */
+  const handleCloseForm = (forceClose: boolean = false) => {
+    console.log("Closing form...", hasUnsavedChanges, !forceClose);
+    if (hasUnsavedChanges && !forceClose) return;
+    setOpenForm(false);
+    setCurrentApplication(null);
   };
 
   if (loading) {
@@ -147,65 +134,56 @@ const Applications: React.FC = (): JSX.Element => {
   }
 
   return (
-    <Grid size={12} p={3}>
-      <Box display="flex" justifyContent="space-between" pb={4}>
-        <Typography variant="h4">Applications</Typography>
-        <Box display="flex" flexDirection="column">
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={() => setOpenForm(true)}
-            startIcon={<AddCircleTwoToneIcon />}>
-            Create new application
-          </Button>
-        </Box>
-      </Box>
-      <Grid container direction="row" spacing={{ xs: 2, sm: 3 }} columns={12}>
-        {applications.map((app) => (
-          <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={app._id}>
-            <ApplicationCard application={app} onEdit={() => handleEdit(app)} onDelete={() => handleDelete(app._id)} />
+    <ManagedDialogs itemType="application">
+      {(showDialog) => (
+        <Grid size={12} p={3}>
+          <Box display="flex" justifyContent="space-between" pb={4}>
+            <Typography variant="h4">Applications</Typography>
+            <Box display="flex" flexDirection="column">
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={() => setOpenForm(true)}
+                startIcon={<AddCircleTwoToneIcon />}>
+                Create new application
+              </Button>
+            </Box>
+          </Box>
+          <Grid container direction="row" spacing={{ xs: 2, sm: 3 }} columns={12}>
+            {applications.map((app) => (
+              <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={app._id}>
+                <ApplicationCard
+                  application={app}
+                  onEdit={() => handleEdit(app)}
+                  onDelete={() => showDialog("confirmDelete", () => handleDelete(app._id))}
+                />
+              </Grid>
+            ))}
           </Grid>
-        ))}
-      </Grid>
-      <Drawer anchor="right" open={openForm} onClose={() => handleCloseForm()}>
-        <ApplicationForm
-          open={openForm}
-          onClose={handleCloseForm}
-          onSubmit={handleFormSubmit}
-          initialData={
-            currentApplication
-              ? {
-                  name: currentApplication.name,
-                  description: currentApplication.description,
-                  image: currentApplication.image,
-                  slug: currentApplication.slug,
-                }
-              : undefined
-          }
-          isEditMode={!!currentApplication}
-          setHasUnsavedChanges={setHasUnsavedChanges}
-          hasUnsavedChanges={hasUnsavedChanges}
-        />
-      </Drawer>
-
-      {/* Confirmation Dialog for form closing */}
-      <ConfirmationDialog
-        title="Unsaved Changes"
-        message="Are you sure you want to close the form? Your changes will be lost."
-        open={confirmClose}
-        onCancel={handleCancelClose}
-        onConfirm={handleConfirmClose}
-      />
-
-      {/* Confirmation Dialog for deletion */}
-      <ConfirmationDialog
-        title="Delete Application"
-        message="Are you sure you want to delete this application?"
-        open={!!confirmDelete}
-        onCancel={() => setConfirmDelete(null)}
-        onConfirm={() => handleConfirmDelete(confirmDelete!)}
-      />
-    </Grid>
+          <Drawer anchor="right" open={openForm} onClose={() => handleClose(showDialog)}>
+            <ApplicationForm
+              open={openForm}
+              onClose={handleCloseForm}
+              onSubmit={handleFormSubmit}
+              initialData={
+                currentApplication
+                  ? {
+                      name: currentApplication.name,
+                      description: currentApplication.description,
+                      image: currentApplication.image,
+                      slug: currentApplication.slug,
+                    }
+                  : undefined
+              }
+              isEditMode={!!currentApplication}
+              setHasUnsavedChanges={setHasUnsavedChanges}
+              hasUnsavedChanges={hasUnsavedChanges}
+              showDialog={showDialog}
+            />
+          </Drawer>
+        </Grid>
+      )}
+    </ManagedDialogs>
   );
 };
 
