@@ -29,22 +29,26 @@ export const createApplication = async (application: { name: string; image?: str
 
 /**
  * Deletes an application by ID.
- * @param {string} id - The ID of the application to delete.
+ * @param {string} slug - The slug of the application to delete.
  * @returns {Promise<void>} A promise that resolves when the application is deleted.
  */
-export const deleteApplication = async (id: string): Promise<void> => {
-  await axios.delete(`${API_BASE_URL}/api/applications/${id}`);
+export const deleteApplication = async (slug: string): Promise<void> => {
+  await axios.delete(`${API_BASE_URL}/api/applications/${slug}`);
 };
 
 /**
  * Updates an existing application by ID.
- * @param {string} id - The ID of the application to update.
+ * @param {string} slug - The slug of the application to update.
  * @param {string} newName - The new name for the application.
  * @param {string} newDescription - The new description for the application.
  * @returns {Promise<Application>} - The updated application object.
  */
-export const updateApplication = async (id: string, newName: string, newDescription: string): Promise<Application> => {
-  const response = await axios.patch(`${API_BASE_URL}/api/applications/${id}`, {
+export const updateApplication = async (
+  slug: string,
+  newName: string,
+  newDescription: string
+): Promise<Application> => {
+  const response = await axios.patch(`${API_BASE_URL}/api/applications/${slug}`, {
     name: newName,
     description: newDescription,
   });
@@ -53,23 +57,33 @@ export const updateApplication = async (id: string, newName: string, newDescript
 
 /**
  * Retrieves all deployments for a specific application.
- * @param {string} id - The ID of the application.
+ * @param {string} slug - The slug of the application to fetch.
  * @returns {Promise<Deployment[]>} - The list of deployments.
  */
-export const fetchDeployments = async (id: string): Promise<Deployment[]> => {
-  const response = await axios.get(`${API_BASE_URL}/api/applications/${id}/deployments`);
+export const fetchDeployments = async (slug: string): Promise<Deployment[]> => {
+  const response = await axios.get(`${API_BASE_URL}/api/applications/${slug}/deployments`);
   return response.data;
-//   const deployments = response.data;
+  //   const deployments = response.data;
 
-//   // Transform the data to a key-value format where keys are application IDs
-//   const deploymentsByAppId: Record<string, any[]> = {};
-//   deployments.forEach((deployment) => {
-//     const appId = deployment.applicationId;
-//     if (!deploymentsByAppId[appId]) {
-//       deploymentsByAppId[appId] = [];
-//     }
-//     deploymentsByAppId[appId].push(deployment);
-//   });
+  //   // Transform the data to a key-value format where keys are application IDs
+  //   const deploymentsByAppId: Record<string, any[]> = {};
+  //   deployments.forEach((deployment) => {
+  //     const appId = deployment.applicationId;
+  //     if (!deploymentsByAppId[appId]) {
+  //       deploymentsByAppId[appId] = [];
+  //     }
+  //     deploymentsByAppId[appId].push(deployment);
+  //   });
 
-//   return deploymentsByAppId;
+  //   return deploymentsByAppId;
+};
+
+/**
+ * Fetches an application by its slug.
+ * @param {string} slug - The slug of the application to fetch.
+ * @returns {Promise<Application>} - The application object.
+ */
+export const fetchApplicationBySlug = async (slug: string): Promise<Application> => {
+  const response = await axios.get(`${API_BASE_URL}/api/applications/${slug}`);
+  return response.data;
 };

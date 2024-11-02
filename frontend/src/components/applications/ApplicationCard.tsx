@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Card,
   CardContent,
@@ -26,7 +27,7 @@ import CachedIcon from "@mui/icons-material/Cached";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { Application } from "../../types/Application";
 import { fetchDeployments } from "../../services/api";
-import ApplicationDetails from "./ApplicationDetails";
+import ApplicationDetails from "../../pages/ApplicationDetails";
 import DeploymentTable from "../deployments/DeploymentTable";
 import ApplicationStatusChart from "./ApplicationStatusChart";
 import { LiaCubeSolid, LiaCubesSolid } from "react-icons/lia";
@@ -67,41 +68,12 @@ interface ApplicationCardProps {
  * @returns {JSX.Element} The rendered component.
  */
 const ApplicationCard: React.FC<ApplicationCardProps> = ({ application, onEdit, onDelete }): JSX.Element => {
-  const [openModal, setOpenModal] = useState(false);
-  const [activeTab, setActiveTab] = useState(0);
-  const [deployments, setDeployments] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
-  useEffect(() => {
-    if (openModal) {
-      fetchApplicationDeployments();
-    }
-  }, [openModal]);
+  const navigate = useNavigate();
 
-  const handleOpenModal = () => {
-    setOpenModal(true);
-  };
-
-  const handleCloseModal = () => {
-    setOpenModal(false);
-  };
-
-  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
-    setActiveTab(newValue);
-  };
-
-  // Fetch the deployments for the application
-  const fetchApplicationDeployments = async () => {
-    setLoading(true);
-    try {
-      const data = await fetchDeployments(application._id);
-      setDeployments(data);
-    } catch (error) {
-      console.error("Failed to fetch deployments:", error);
-    } finally {
-      setLoading(false);
-    }
+  const handleViewDetails = () => {
+    navigate(`/applications/${application.slug}`);
   };
 
   // Handle opening the menu for Edit and Delete actions
@@ -172,11 +144,11 @@ const ApplicationCard: React.FC<ApplicationCardProps> = ({ application, onEdit, 
         </CardContent>
         <Divider />
         <CardActions sx={{ justifyContent: "space-between", p: 2 }}>
-          <Button variant="outlined" color="secondary" size="small" onClick={handleOpenModal}>
+          <Button variant="outlined" color="secondary" size="small" onClick={handleViewDetails}>
             View details
           </Button>
           <ButtonGroup>
-            <IconButton onClick={fetchApplicationDeployments}>
+            <IconButton onClick={() => console.log("Refresh Clicked")}>
               <CachedIcon />
             </IconButton>
             <IconButton onClick={handleActionsMenuOpen}>
@@ -204,23 +176,6 @@ const ApplicationCard: React.FC<ApplicationCardProps> = ({ application, onEdit, 
           Delete
         </MenuItem>
       </Menu>
-
-      <Dialog open={openModal} onClose={handleCloseModal} fullWidth maxWidth="md">
-        <DialogTitle>{application.name} Details</DialogTitle>
-        <DialogContent>
-          <Tabs value={activeTab} onChange={handleTabChange}>
-            <Tab label="Basic Info" />
-            <Tab label="Deployments" />
-          </Tabs>
-          <Box sx={{ marginTop: 2 }}>
-            {activeTab === 0 && <ApplicationDetails application={application} />}
-            {activeTab === 1 && <DeploymentTable deployments={deployments} loading={loading} />}
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseModal}>Close</Button>
-        </DialogActions>
-      </Dialog>
     </>
   );
 };

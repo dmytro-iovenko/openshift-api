@@ -1,3 +1,5 @@
+import slugify from "slugify";
+import { v4 as uuidv4 } from "uuid";
 import Application from "../models/Application.js";
 import { fetchAndUpdateDeploymentById } from "./deploymentUtils.js";
 
@@ -23,4 +25,23 @@ export const fetchApplicationsWithDeployments = async () => {
     console.error(`Failed to fetch applications with deployments: ${error.message}`);
     throw error;
   }
+};
+
+/**
+ * Generates a unique slug for the application.
+ *
+ * @param {string} name - The name of the application.
+ * @returns {Promise<string>} - A promise that resolves to a unique slug.
+ */
+export const generateUniqueSlug = async (name) => {
+  const baseSlug = slugify(name, { lower: true, strict: true });
+  let uniqueSlug = baseSlug;
+
+  // Check if the slug already exists
+  while (await Application.exists({ slug: uniqueSlug })) {
+    const uniqueId = uuidv4().split("-")[0];
+    uniqueSlug = `${baseSlug}-${uniqueId}`;
+  }
+
+  return uniqueSlug;
 };

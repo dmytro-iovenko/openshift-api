@@ -1,13 +1,17 @@
 import Application from "../models/Application.js";
 import Deployment from "../models/Deployment.js";
+import error from "../utils/errorUtils.js";
+import { fetchApplicationsWithDeployments, generateUniqueSlug } from "../utils/applicationUtils.js";
+import {
+  fetchAndUpdateDeploymentById,
+  generateUniqueDeploymentName,
+  updateDeploymentStatus,
+} from "../utils/deploymentUtils.js";
 import {
   createOpenshiftDeployment,
   deleteOpenshiftDeployment,
   getOpenshiftDeployments,
 } from "../services/openshiftApi.js";
-import { fetchApplicationsWithDeployments } from "../utils/applicationUtils.js";
-import { fetchAndUpdateDeploymentById, updateDeploymentStatus } from "../utils/deploymentUtils.js";
-import error from "../utils/errorUtils.js";
 
 /**
  * Fetches deployments from OpenShift and creates a mapping of deployment names to their details.
@@ -48,7 +52,8 @@ export const createApplication = async (req, res, next) => {
     const savedApplication = await application.save();
 
     // Create deployment in OpenShift and link it to the application
-    const deployment = await createOpenshiftDeployment(name, image);
+    const uniqueDeploymentName = await generateUniqueDeploymentName(savedApplication.slug);
+    const deployment = await createOpenshiftDeployment(uniqueDeploymentName, image);
     const deploymentDoc = new Deployment({
       applicationId: savedApplication._id,
       name: deployment.metadata.name,
@@ -61,7 +66,7 @@ export const createApplication = async (req, res, next) => {
     await savedApplication.save();
 
     // Update deployment status and other fields using the returned deployment object
-    updateDeploymentStatus(deploymentDoc, deployment);
+    await updateDeploymentStatus(deploymentDoc, deployment);
     await deploymentDoc.save();
 
     res.status(201).json(savedApplication);
@@ -95,17 +100,17 @@ export const getApplications = async (req, res, next) => {
  *
  * @async
  * @function getApplication
- * @param {Object} req - The request object containing the application ID.
+ * @param {Object} req - The request object containing the application slug.
  * @param {Object} res - The response object to send the results.
  * @param {Function} next - The next middleware function.
  * @returns {Promise<void>} - Responds with the application details including its deployments.
  */
 export const getApplication = async (req, res, next) => {
-  const { id } = req.params;
+  const { slug } = req.params;
 
-  console.debug("Fetching application:", id);
+  console.debug("Fetching application:", slug);
   try {
-    const application = await Application.findById(id).populate("deployments");
+    const application = await Application.findOne({ slug }).populate("deployments");
     if (!application) {
       return next(error(404, "Application not found"));
     }
@@ -120,21 +125,21 @@ export const getApplication = async (req, res, next) => {
 };
 
 /**
- * Deletes an application from the database by ID.
+ * Deletes an application from the database by slug.
  *
  * @async
  * @function deleteApplication
- * @param {Object} req - The request object containing the application ID.
+ * @param {Object} req - The request object containing the application slug.
  * @param {Object} res - The response object.
  * @param {Function} next - The next middleware function.
  * @returns {Promise<void>} - Responds with no content on successful deletion.
  */
 export const deleteApplication = async (req, res, next) => {
-  const { id } = req.params;
+  const { slug } = req.params;
 
-  console.debug("Deleting application:", id);
+  console.debug("Deleting application:", slug);
   try {
-    const application = await Application.findById(id);
+    const application = await Application.findById(slug);
     if (!application) {
       return next(error(404, "Application not found"));
     }
@@ -154,7 +159,7 @@ export const deleteApplication = async (req, res, next) => {
     );
 
     // Delete the application from MongoDB
-    await Application.findByIdAndDelete(id);
+    await Application.findByIdAndDelete(slug);
 
     // Remove associated deployments from MongoDB
     await Deployment.deleteMany({ applicationId: application._id });
@@ -176,49 +181,32 @@ export const deleteApplication = async (req, res, next) => {
  * @returns {Promise<void>} - Responds with an updated application.
  */
 export const updateApplication = async (req, res, next) => {
-  const { id } = req.params;
+  const { slug } = req.params;
   const { name, description } = req.body;
 
-  console.debug("Updating application:", id, name, description);
+  console.debug("Updating application:", slug, name, description);
   try {
-    // Find the application by ID and update its name and description
-    const updatedApplication = await Application.findByIdAndUpdate(
-      id,
-      { name, description },
-      { new: true } // Return the updated document
-    );
-
-    if (!updatedApplication) {
-      next(error(404, "Application not found"));
+    const application = await Application.findOne({ slug });
+    if (!application) {
+      return next(error(400, "Application not found"));
     }
 
+    let isSlugChanged = false;
+    if (name && name !== application.name) {
+      application.name = name;
+      isSlugChanged = true;
+    }
+
+    if (description) {
+      application.description = description;
+    }
+
+    if (isSlugChanged) {
+      application.slug = await generateUniqueSlug(application.name);
+    }
+
+    const updatedApplication = await application.save();
     res.status(200).json(updatedApplication);
-
-    // // Fetch OpenShift deployments after updating the application
-    // const openShiftDeploymentMap = await fetchOpenShiftDeployments();
-
-    // // Update related deployments with new OpenShift data
-    // const updatedDeployments = await Promise.all(
-    //   updatedApplication.deployments.map(async (deploymentId) => {
-    //     const deployment = await Deployment.findById(deploymentId);
-    //     const openShiftData = openShiftDeploymentMap[deployment.name] || null;
-
-    //     // Check if we need to refresh the status
-    //     if (needsUpdate(deployment) && openShiftData) {
-    //       await updateDeploymentStatus(deployment, openShiftData);
-    //       await deployment.save();
-    //     }
-
-    //     return deployment;
-    //   })
-    // );
-
-    // const response = {
-    //   ...updatedApplication.toObject(),
-    //   deployments: updatedDeployments,
-    // };
-
-    // res.status(200).json(response);
   } catch (error) {
     next(error);
   }

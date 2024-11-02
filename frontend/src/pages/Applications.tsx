@@ -55,10 +55,12 @@ const Applications: React.FC = (): JSX.Element => {
   const handleFormSubmit = async (data: { name: string; description?: string; image?: string }): Promise<void> => {
     if (currentApplication) {
       // Update existing application
-      await updateApplication(currentApplication._id, data.name, data.description || "");
+      const updatedApplication = await updateApplication(currentApplication.slug, data.name, data.description || "");
       setApplications(
         applications.map((app) =>
-          app._id === currentApplication._id ? { ...app, name: data.name, description: data.description } : app
+          app._id === currentApplication._id
+            ? { ...app, name: data.name, description: data.description, slug: updatedApplication.slug }
+            : app
         )
       );
     } else {

@@ -1,5 +1,6 @@
 import axios from "axios";
 import "dotenv/config";
+import customError from "../utils/errorUtils.js";
 
 // Environment variables for OpenShift API configuration
 const API_URL = process.env.OPENSHIFT_API_URL;
@@ -26,7 +27,26 @@ export const openshiftRequest = async (method, url, data = {}) => {
     const response = await axios({ method, url, data, headers });
     return response.data;
   } catch (error) {
-    throw new Error(error.response?.data?.message || "OpenShift API request failed");
+    throw customError(error.response?.status || 500, error.response?.data?.message || "OpenShift API request failed");
+  }
+};
+
+/**
+ * Checks if a deployment exists in OpenShift by its name.
+ *
+ * @param {string} deploymentName - The name of the deployment to check.
+ * @returns {Promise<boolean>} - Returns true if the deployment exists, false otherwise.
+ * @throws {Error} - Throws an error if there is a problem checking the deployment.
+ */
+export const checkOpenShiftDeploymentExists = async (deploymentName) => {
+  try {
+    await openshiftRequest("GET", `${API_URL}/apis/apps/v1/namespaces/${NAMESPACE}/deployments/${deploymentName}`);
+    return true;
+  } catch (error) {
+    if (error.status === 404) {
+      return false;
+    }
+    throw new Error("Error checking deployment existence in OpenShift.");
   }
 };
 

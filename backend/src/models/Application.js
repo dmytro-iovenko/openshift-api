@@ -1,4 +1,6 @@
 import mongoose from "mongoose";
+import slugify from "slugify";
+import { v4 as uuidv4 } from "uuid";
 
 /**
  * Schema definition for the Application model.
@@ -15,12 +17,29 @@ import mongoose from "mongoose";
 const ApplicationSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
+    slug: { type: String, unique: true },
     description: { type: String },
     image: { type: String, required: true },
-    deployments: [{ type: mongoose.Schema.Types.ObjectId, ref: "Deployment" }], // Changed to store an array of Deployment IDs
+    deployments: [{ type: mongoose.Schema.Types.ObjectId, ref: "Deployment" }],
   },
   { timestamps: true }
 );
+
+/**
+ * Pre-save middleware to generate a slug from the application name.
+ */
+ApplicationSchema.pre("save", async function (next) {
+  if (!this.slug) {
+    this.slug = slugify(this.name, { lower: true, strict: true });
+    // Ensure uniqueness
+    let originalSlug = this.slug;
+    while (await Application.exists({ slug: this.slug })) {
+      const uniqueSuffix = uuidv4().split("-")[0];
+      this.slug = `${originalSlug}-${uniqueSuffix}`;
+    }
+  }
+  next();
+});
 
 /**
  * Application model based on the defined schema

@@ -36,13 +36,13 @@ const DeploymentTable: React.FC<DeploymentTableProps> = ({ deployments, loading 
     const days = Math.floor(diffInSeconds / 86400);
 
     if (diffInSeconds < 60) {
-      return `${diffInSeconds} seconds ago`;
+      return `${diffInSeconds}s`;
     } else if (minutes < 60) {
-      return `${minutes} minutes ${diffInSeconds % 60} seconds ago`;
+      return `${minutes}m ${diffInSeconds % 60}s`;
     } else if (hours < 24) {
-      return `${hours} hours ${minutes % 60} minutes ago`;
+      return `${hours}h ${minutes % 60}m`;
     } else {
-      return `${days} days ${hours % 24} hours ago`;
+      return `${days}d ${hours % 24}h`;
     }
   };
 
@@ -61,8 +61,8 @@ const DeploymentTable: React.FC<DeploymentTableProps> = ({ deployments, loading 
   // Define columns for the data grid
   const columns: GridColDef[] = [
     { field: "name", headerName: "Deployment Name", flex: 1, minWidth: 150 },
-    { field: "status", headerName: "Status", flex: 1, minWidth: 150 },
-    { field: "availability", headerName: "Availability", flex: 1, minWidth: 150 },
+    { field: "status", headerName: "Status", flex: 1, minWidth: 100 },
+    { field: "availability", headerName: "Availability", flex: 1, minWidth: 100 },
     {
       field: "labels",
       headerName: "Labels",
@@ -76,24 +76,25 @@ const DeploymentTable: React.FC<DeploymentTableProps> = ({ deployments, loading 
         </Box>
       ),
     },
-    {
-      field: "podSelector",
-      headerName: "Pod Selector",
-      flex: 1,
-      minWidth: 150,
-      renderCell: (params) => (
-        <Box>
-          {params.value.map((selector: string) => (
-            <Chip key={selector} label={selector} style={{ marginRight: 4 }} />
-          ))}
-        </Box>
-      ),
-    },
-    { field: "age", headerName: "Age", flex: 1, minWidth: 150 },
+    // {
+    //   field: "podSelector",
+    //   headerName: "Pod Selector",
+    //   flex: 1,
+    //   minWidth: 150,
+    //   renderCell: (params) => (
+    //     <Box>
+    //       {params.value.map((selector: string) => (
+    //         <Chip key={selector} label={selector} style={{ marginRight: 4 }} />
+    //       ))}
+    //     </Box>
+    //   ),
+    // },
+    { field: "age", headerName: "Age", flex: 1, minWidth: 50 },
     {
       field: "actions",
       headerName: "Actions",
-      width: 50,
+      flex: 1, 
+      minWidth: 50,
       renderCell: (params) => (
         <IconButton onClick={(event) => handleMenuClick(event, params.row)}>
           <MoreVertIcon />
