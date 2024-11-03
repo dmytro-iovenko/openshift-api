@@ -16,6 +16,7 @@ import {
   Menu,
   MenuItem,
   ButtonGroup,
+  CircularProgress,
 } from "@mui/material";
 import CachedIcon from "@mui/icons-material/Cached";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
@@ -50,6 +51,8 @@ interface ApplicationCardProps {
   application: Application;
   onEdit: () => void;
   onDelete: () => void;
+  onRefresh: () => void;
+  isRefreshing: boolean;
 }
 
 /**
@@ -58,7 +61,13 @@ interface ApplicationCardProps {
  * @param {ApplicationCardProps} props - The props for the component.
  * @returns {JSX.Element} The rendered component.
  */
-const ApplicationCard: React.FC<ApplicationCardProps> = ({ application, onEdit, onDelete }): JSX.Element => {
+const ApplicationCard: React.FC<ApplicationCardProps> = ({
+  application,
+  onEdit,
+  onDelete,
+  onRefresh,
+  isRefreshing,
+}): JSX.Element => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   const navigate = useNavigate();
@@ -146,8 +155,8 @@ const ApplicationCard: React.FC<ApplicationCardProps> = ({ application, onEdit, 
             View details
           </Button>
           <ButtonGroup>
-            <IconButton onClick={() => console.log("Refresh Clicked")}>
-              <CachedIcon />
+            <IconButton onClick={isRefreshing ? undefined : onRefresh}>
+              {isRefreshing ? <CircularProgress size={24} /> : <CachedIcon />}
             </IconButton>
             <IconButton onClick={handleActionsMenuOpen}>
               <MoreVertIcon />

@@ -16,7 +16,6 @@ export const calculateDeploymentStatuses = (deployments: Deployment[]) => {
 
   // Iterate through each deployment and count statuses
   deployments.forEach((dep) => {
-    console.log(dep.status);
     switch (dep.status) {
       case "Available":
         statusCounts.Available++;

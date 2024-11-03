@@ -17,7 +17,6 @@ const ManagedDialogs: React.FC<ManagedDialogsProps> = ({ itemType, children }) =
   };
 
   const handleCancel = () => {
-    console.log("Cancel");
     setOpenDialog(null);
     setConfirmCallback(null);
   };

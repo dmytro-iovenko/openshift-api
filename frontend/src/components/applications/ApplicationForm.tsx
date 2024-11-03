@@ -127,7 +127,7 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({
    * Handles the request to close the form.
    * If there are unsaved changes, a confirmation dialog is shown.
    */
-  const handleCloseRequest = () => {
+  const handleClose = () => {
     if (hasUnsavedChanges) {
       showDialog("confirmClose", () => {
         setHasUnsavedChanges(false);
@@ -196,7 +196,7 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({
         />
       )}
       <Box sx={{ mt: 1, display: "flex", justifyContent: "space-between" }}>
-        <Button onClick={handleCloseRequest}>Cancel</Button>
+        <Button onClick={handleClose}>Cancel</Button>
         <Button onClick={handleSubmit} disabled={!hasUnsavedChanges}>
           {isEditMode ? "Save" : "Create"}
         </Button>
@@ -218,24 +218,6 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({
           </Box>
         </>
       )}
-
-      {/* Confirmation Dialog for closing the form */}
-      {/* <ConfirmationDialog
-        title="Unsaved Changes"
-        message="Are you sure you want to close the form? Your changes will be lost."
-        open={confirmClose}
-        onCancel={handleCancelClose}
-        onConfirm={handleConfirmClose}
-      /> */}
-
-      {/* Confirmation Dialog for navigation */}
-      {/* <ConfirmationDialog
-        title="Unsaved Changes"
-        message="Are you sure you want to navigate away? Your changes will be lost."
-        open={confirmNavigate}
-        onCancel={handleCancelNavigate}
-        onConfirm={handleConfirmNavigate}
-      /> */}
     </Box>
   );
 };

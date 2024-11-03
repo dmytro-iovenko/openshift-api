@@ -41,3 +41,5 @@ export const useBreadcrumbs = () => {
   }
   return context;
 };
+
+export default BreadcrumbsProvider;
