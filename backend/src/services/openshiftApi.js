@@ -76,6 +76,13 @@ export const createOpenshiftDeployment = async (name, image) => {
   return await openshiftRequest("POST", url, deploymentConfig); // Call the API to create the deployment
 };
 
+
+export const createOpenshiftDeploymentFromYaml = async (yamlObject) => {
+  const url = `${API_URL}/apis/apps/v1/namespaces/${NAMESPACE}/deployments`;
+  return await openshiftRequest("POST", url, yamlObject); // Directly use the YAML object
+};
+
+
 /**
  * Deletes a deployment from OpenShift.
  *
@@ -119,9 +126,62 @@ export const getOpenshiftDeploymentDetails = async (name) => {
  */
 export const updateOpenshiftDeployment = async (name, updateData) => {
   try {
-    const response = await axios.patch(`/apis/apps/v1/deployments/${name}`, updateData); // Adjust URL as necessary
+    const response = await axios.patch(`/apis/apps/v1/namespaces/${NAMESPACE}/deployments/${name}`, updateData);
     return response.data;
   } catch (error) {
     throw new Error(`Failed to update deployment: ${error.message}`);
   }
 };
+
+/**
+ * Scales a deployment in OpenShift.
+ *
+ * @param {string} name - The name of the deployment to scale.
+ * @param {number} replicas - The desired number of replicas.
+ * @returns {Promise<object>} - The updated deployment details.
+ * @throws Will throw an error if the request fails.
+ */
+export const scaleOpenshiftDeployment = async (name, replicas) => {
+  const scaleData = {
+    spec: {
+      replicas: replicas,
+    },
+  };
+
+  const url = `${API_URL}/apis/apps/v1/namespaces/${NAMESPACE}/deployments/${name}/scale`;
+  return await openshiftRequest("PATCH", url, scaleData);
+};
+
+/**
+ * Retrieves the history of a deployment in OpenShift.
+ *
+ * @param {string} name - The name of the deployment.
+ * @returns {Promise<object>} - The deployment history details.
+ * @throws Will throw an error if the request fails.
+ */
+export const getOpenshiftDeploymentHistory = async (name) => {
+  const url = `${API_URL}/apis/apps/v1/namespaces/${NAMESPACE}/deployments/${name}/revisions`;
+  return await openshiftRequest("GET", url);
+};
+
+/**
+ * Rolls back a deployment to a specific revision in OpenShift.
+ *
+ * @param {string} name - The name of the deployment.
+ * @param {number} revision - The revision number to roll back to.
+ * @returns {Promise<object>} - The rolled-back deployment details.
+ * @throws Will throw an error if the request fails.
+ */
+export const rollbackOpenshiftDeployment = async (name, revision) => {
+  const rollbackData = {
+    kind: "Rollback",
+    apiVersion: "apps/v1",
+    name: name,
+    revision: revision,
+  };
+
+  const url = `${API_URL}/apis/apps/v1/namespaces/${NAMESPACE}/deployments/${name}/rollback`;
+  return await openshiftRequest("POST", url, rollbackData);
+};
+
+

@@ -7,10 +7,11 @@ import {
   updateApplication,
 } from "../controllers/applicationController.js";
 import Application from "../models/Application.js";
+import { getDeploymentsForApplication } from "../controllers/applicationController.js";
 
 const router = express.Router();
 
-router.get('/generate-slugs', async (req, res) => {
+router.get("/generate-slugs", async (req, res) => {
   try {
     const applications = await Application.find();
     for (const app of applications) {
@@ -21,18 +22,19 @@ router.get('/generate-slugs', async (req, res) => {
       }
     }
 
-    res.status(200).json({ message: 'Slugs have been generated for all applications.' });
+    res.status(200).json({ message: "Slugs have been generated for all applications." });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Failed to generate slugs.', error });
+    res.status(500).json({ message: "Failed to generate slugs.", error });
   }
 });
 
 // Define routes for application management
 router.post("/", createApplication); // Create a new application
 router.get("/", getApplications); // Retrieve all applications
-router.get('/:slug', getApplication); // Retrieve application by slug
+router.get("/:slug", getApplication); // Retrieve application by slug
 router.delete("/:slug", deleteApplication); // Delete application by slug
 router.patch("/:slug", updateApplication); // Update application by slug
+router.get("/:slug/deployments", getDeploymentsForApplication); // Retrieve application by slug
 
 export default router;

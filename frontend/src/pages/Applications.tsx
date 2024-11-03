@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Button, Typography, Box, Drawer, ButtonGroup } from "@mui/material";
+import { Button, Typography, Box, Drawer } from "@mui/material";
 import Grid from "@mui/material/Grid2";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import AddCircleTwoToneIcon from "@mui/icons-material/AddCircleTwoTone";
@@ -201,17 +201,18 @@ const Applications: React.FC = (): JSX.Element => {
     <ManagedDialogs itemType="application">
       {(showDialog) => (
         <Grid size={12} p={3}>
-          <Box display="flex" justifyContent="space-between" pb={4}>
-            <Typography variant="h4">Applications</Typography>
-            <ButtonGroup variant="text">
+          <Box display="flex" justifyContent="space-between" pb={2} flexWrap="wrap">
+            <Typography variant="h4" gutterBottom>
+              Applications
+            </Typography>
+            <Box display="flex" flexWrap="wrap" alignItems="start" gap={1}>
               <LoadingButton
                 variant="outlined"
                 color="primary"
                 onClick={handleRefreshAll}
                 loading={isRefreshing}
                 loadingPosition="start"
-                startIcon={<RefreshIcon />}
-                sx={{ mr: 1 }}>
+                startIcon={<RefreshIcon />}>
                 Refresh All
               </LoadingButton>
               <Button
@@ -221,23 +222,24 @@ const Applications: React.FC = (): JSX.Element => {
                 startIcon={<AddCircleTwoToneIcon />}>
                 Create new application
               </Button>
-            </ButtonGroup>
+            </Box>
           </Box>
           <Grid container direction="row" spacing={{ xs: 2, sm: 3 }} columns={12}>
-            {applications.map((app) => (
-              <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={app._id}>
-                <ApplicationCard
-                  application={app}
-                  onEdit={() => handleEdit(app)}
-                  onDelete={() => showDialog("confirmDelete", () => handleDelete(app._id))}
-                  onRefresh={() => refreshApplication(app.slug)}
-                  isRefreshing={isRefreshing || isAppRefreshing === app.slug}
-                />
+            {[...applications, undefined].map((app, index) => (
+              <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={app?._id || index}>
+                {app ? (
+                  <ApplicationCard
+                    application={app}
+                    onEdit={() => handleEdit(app)}
+                    onDelete={() => showDialog("confirmDelete", () => handleDelete(app._id))}
+                    onRefresh={() => refreshApplication(app.slug)}
+                    isRefreshing={isRefreshing || isAppRefreshing === app.slug}
+                  />
+                ) : (
+                  <AddApplicationPlaceholder onClick={() => setOpenForm(true)} />
+                )}
               </Grid>
             ))}
-            <Grid direction="row" size={{ xs: 12, sm: 6, lg: 4 }}>
-              <AddApplicationPlaceholder onClick={() => setOpenForm(true)} />
-            </Grid>
           </Grid>
           <Drawer anchor="right" open={openForm} onClose={() => handleClose(showDialog)}>
             <ApplicationForm

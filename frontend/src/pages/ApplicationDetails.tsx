@@ -2,8 +2,9 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Typography, Box, Tabs, Tab } from "@mui/material";
 import { Application } from "../types/Application";
-import { fetchApplicationBySlug, fetchDeployments } from "../services/api";
+import { fetchApplicationBySlug } from "../services/api";
 import { useBreadcrumbs } from "../context/BreadcrumbsContext";
+import { useNotification } from "../context/NotificationContext";
 import Loader from "../components/Loader";
 import ApplicationInfo from "../components/applications/ApplicationInfo";
 import DeploymentTable from "../components/deployments/DeploymentTable";
@@ -15,6 +16,7 @@ import DeploymentTable from "../components/deployments/DeploymentTable";
 const ApplicationDetails = (): JSX.Element => {
   const { slug } = useParams<{ slug: string }>();
   const { setBreadcrumbs } = useBreadcrumbs();
+  const { addNotification } = useNotification();
   const [application, setApplication] = useState<Application | null>(null);
   const [deployments, setDeployments] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState(0);
@@ -39,14 +41,10 @@ const ApplicationDetails = (): JSX.Element => {
       try {
         const app = await fetchApplicationBySlug(slug!);
         setApplication(app);
-        try {
-          const data = await fetchDeployments(app._id);
-          setDeployments(data);
-        } catch (error) {
-          console.error("Failed to fetch deployments:", error);
-        }
+        setDeployments(app.deployments);
       } catch (error) {
         console.error("Failed to fetch application details:", error);
+        addNotification("Failed to fetch application details.", "error");
       } finally {
         setLoading(false);
       }

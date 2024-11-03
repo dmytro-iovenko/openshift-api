@@ -6,6 +6,7 @@ import connectDB from "./config.js";
 import cors from "cors";
 import "dotenv/config";
 import "./schedulers/deploymentsScheduler.js";
+import logger from './utils/logger.js';
 
 const app = express();
 app.use(express.json());
@@ -20,7 +21,7 @@ app.get("/", (req, res) => {
 app.use("/api/applications", applicationRoutes);
 
 // Use nested routing for deployments
-app.use("/api/applications/:id/deployments", deploymentRoutes); 
+app.use("/api/deployments", deploymentRoutes); 
 
 // Connect to MongoDB
 connectDB();
@@ -28,7 +29,10 @@ connectDB();
 // Error handling middleware
 app.use(errorHandler);
 
+// Set the logger level based on the environment
+logger.level = process.env.NODE_ENV === 'production' ? 'error' : 'debug';
+
 const PORT = 5000;
 app.listen(PORT, () => {
-  console.log("Server is running on port: " + PORT);
+  logger.info("Server is running on port: " + PORT);
 });

@@ -12,6 +12,18 @@ import {
   deleteOpenshiftDeployment,
   getOpenshiftDeployments,
 } from "../services/openshiftApi.js";
+import { body, validationResult } from "express-validator";
+
+// Validation rules
+const validateApplication = [
+  body("name").notEmpty().withMessage("Name is required."),
+  body("description").optional().isString().withMessage("Description must be a string."),
+  body("image").optional().isString().withMessage("Image must be a string."),
+];
+const validateUpdateApplication = [
+  body("name").optional().notEmpty().withMessage("Name cannot be empty."),
+  body("description").optional().isString().withMessage("Description must be a string."),
+];
 
 /**
  * Fetches deployments from OpenShift and creates a mapping of deployment names to their details.
@@ -42,11 +54,17 @@ const fetchOpenShiftDeployments = async () => {
  * @param {Function} next - The next middleware function.
  * @returns {Promise<void>} - Responds with the created application.
  */
-export const createApplication = async (req, res, next) => {
+export const createApplication = validateApplication.concat(async (req, res, next) => {
   const { name, description, image } = req.body;
 
-  console.debug("Creating application:", name, description, image);
+  logger.debug("Creating application:", { name, description, image });
   try {
+    // Validate input
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return next(error(400, "Validation errors: " + JSON.stringify(errors.array())));
+    }
+
     // Create application and save it in MongoDB
     const application = new Application({ name, description, image });
     const savedApplication = await application.save();
@@ -74,7 +92,7 @@ export const createApplication = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-};
+});
 
 /**
  * Retrieves all applications from the database.
@@ -87,7 +105,7 @@ export const createApplication = async (req, res, next) => {
  * @returns {Promise<void>} - Responds with a list of applications.
  */
 export const getApplications = async (req, res, next) => {
-  console.debug("Fetching applications");
+  logger.debug("Fetching applications");
   try {
     const applicationsWithOpenShiftData = await fetchApplicationsWithDeployments();
     res.status(200).json(applicationsWithOpenShiftData);
@@ -109,7 +127,7 @@ export const getApplications = async (req, res, next) => {
 export const getApplication = async (req, res, next) => {
   const { slug } = req.params;
 
-  console.debug("Fetching application:", slug);
+  logger.debug("Fetching application:", slug);
   try {
     const application = await Application.findOne({ slug }).populate("deployments");
     if (!application) {
@@ -138,7 +156,7 @@ export const getApplication = async (req, res, next) => {
 export const deleteApplication = async (req, res, next) => {
   const { slug } = req.params;
 
-  console.debug("Deleting application:", slug);
+  logger.debug("Deleting application:", slug);
   try {
     const application = await Application.findById(slug);
     if (!application) {
@@ -181,11 +199,11 @@ export const deleteApplication = async (req, res, next) => {
  * @param {Function} next - The next middleware function.
  * @returns {Promise<void>} - Responds with an updated application.
  */
-export const updateApplication = async (req, res, next) => {
+export const updateApplication = validateUpdateApplication.concat(async (req, res, next) => {
   const { slug } = req.params;
   const { name, description } = req.body;
 
-  console.debug("Updating application:", slug, name, description);
+  logger.debug("Updating application:", { slug, name, description });
   try {
     const application = await Application.findOne({ slug });
     if (!application) {
@@ -208,6 +226,39 @@ export const updateApplication = async (req, res, next) => {
 
     const updatedApplication = await application.save();
     res.status(200).json(updatedApplication);
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * Retrieves deployments associated with a specific application.
+ *
+ * @async
+ * @function getDeployments
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @param {Function} next - The next middleware function.
+ * @returns {Promise<void>} - Responds with a list of deployments.
+ */
+export const getDeploymentsForApplication = async (req, res, next) => {
+  const { slug } = req.params;
+
+  logger.debug("Fetching deployments for application:", id);
+  try {
+    const application = await Application.findOne({ slug });
+    if (!application) {
+      return next(error(400, "Application not found"));
+    }
+
+    // Fetch deployments from MongoDB
+    const deployments = await Deployment.find({ applicationId: application._id });
+
+    // Fetch additional deployment data from OpenShift and combine it with the local data
+    const combinedDeployments = await Promise.all(
+      deployments.map(async (deployment) => fetchAndUpdateDeployment(deployment))
+    );
+    res.status(200).json(combinedDeployments);
   } catch (error) {
     next(error);
   }

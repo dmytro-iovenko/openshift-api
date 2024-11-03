@@ -10,7 +10,6 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000
  * @returns {Promise<Application[]>} A promise that resolves to an array of applications.
  */
 export const fetchApplications = async (): Promise<Application[]> => {
-  console.log("Fetching applications...", `${API_BASE_URL}/api/applications`);
   const response = await axios.get(`${API_BASE_URL}/api/applications`);
   return response.data;
 };
@@ -56,34 +55,20 @@ export const updateApplication = async (
 };
 
 /**
- * Retrieves all deployments for a specific application.
- * @param {string} slug - The slug of the application to fetch.
- * @returns {Promise<Deployment[]>} - The list of deployments.
- */
-export const fetchDeployments = async (slug: string): Promise<Deployment[]> => {
-  const response = await axios.get(`${API_BASE_URL}/api/applications/${slug}/deployments`);
-  return response.data;
-  //   const deployments = response.data;
-
-  //   // Transform the data to a key-value format where keys are application IDs
-  //   const deploymentsByAppId: Record<string, any[]> = {};
-  //   deployments.forEach((deployment) => {
-  //     const appId = deployment.applicationId;
-  //     if (!deploymentsByAppId[appId]) {
-  //       deploymentsByAppId[appId] = [];
-  //     }
-  //     deploymentsByAppId[appId].push(deployment);
-  //   });
-
-  //   return deploymentsByAppId;
-};
-
-/**
  * Fetches an application by its slug.
  * @param {string} slug - The slug of the application to fetch.
  * @returns {Promise<Application>} - The application object.
  */
 export const fetchApplicationBySlug = async (slug: string): Promise<Application> => {
   const response = await axios.get(`${API_BASE_URL}/api/applications/${slug}`);
+  return response.data;
+};
+
+/**
+ * Retrieves all deployments.
+ * @returns {Promise<Deployment[]>} - The list of deployments.
+ */
+export const fetchDeployments = async (): Promise<Deployment[]> => {
+  const response = await axios.get(`${API_BASE_URL}/api/deployments`);
   return response.data;
 };

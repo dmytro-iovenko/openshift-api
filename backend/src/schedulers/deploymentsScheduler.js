@@ -2,6 +2,7 @@ import cron from "node-cron";
 import Deployment from "../models/Deployment.js";
 import { getOpenshiftDeployments } from "../services/openshiftApi.js";
 import { updateDeploymentStatus } from "../utils/deploymentUtils.js";
+import logger from "../utils/logger.js";
 
 const jobName = "Deployment Status Update Job";
 
@@ -9,7 +10,7 @@ const jobName = "Deployment Status Update Job";
  * Updates the status of deployments and other fields in MongoDB based on OpenShift data.
  */
 const updateDeploymentsStatus = async () => {
-  console.log(`${jobName} started...`);
+  logger.info(`${jobName} started...`);
 
   try {
     const openShiftDeployments = await getOpenshiftDeployments();
@@ -27,7 +28,7 @@ const updateDeploymentsStatus = async () => {
         const openShiftData = openShiftDeploymentMap[deployment.name] || null;
 
         if (openShiftData) {
-            await updateDeploymentStatus(deployment, openShiftData, true);
+          await updateDeploymentStatus(deployment, openShiftData, true);
         } else {
           // Only update the sync error fields if OpenShift data is not found
           if (deployment.lastSyncStatus !== "Not Found") {
@@ -39,9 +40,9 @@ const updateDeploymentsStatus = async () => {
       })
     );
 
-    console.log(`${jobName} completed successfully`);
+    logger.info(`${jobName} completed successfully`);
   } catch (error) {
-    console.error(`Failed to update deployment statuses in ${jobName}:`, error);
+    logger.error(`Failed to update deployment statuses in ${jobName}:`, error);
   }
 };
 
@@ -49,4 +50,4 @@ const updateDeploymentsStatus = async () => {
 const cronSchedule = "*/5 * * * *"; // Every 5 minutes
 cron.schedule(cronSchedule, updateDeploymentsStatus);
 
-console.log(`${jobName} scheduled with parameters: ${cronSchedule}`);
+logger.info(`${jobName} scheduled with parameters: ${cronSchedule}`);
