@@ -22,7 +22,6 @@ export const openshiftRequest = async (method, url, data = {}) => {
     Authorization: `Bearer ${AUTH_TOKEN}`,
   };
 
-  console.debug(`OpenShift API request: ${method} ${url}`, headers, data);
   try {
     const response = await axios({ method, url, data, headers });
     return response.data;
@@ -105,13 +104,13 @@ export const getOpenshiftDeployments = async () => {
 };
 
 /**
- * Retrieves details of a specific deployment by its name.
+ * Retrieves a specific deployment by its name.
  *
  * @param {string} name - The name of the deployment.
  * @returns {Promise<Object>} The details of the deployment.
  * @throws Will throw an error if the request fails.
  */
-export const getOpenshiftDeploymentDetails = async (name) => {
+export const getOpenshiftDeployment = async (name) => {
   const url = `${API_URL}/apis/apps/v1/namespaces/${NAMESPACE}/deployments/${name}`;
   return await openshiftRequest("GET", url); // Call the API to get a specific deployment by its name
 };

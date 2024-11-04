@@ -72,3 +72,92 @@ export const fetchDeployments = async (): Promise<Deployment[]> => {
   const response = await axios.get(`${API_BASE_URL}/api/deployments`);
   return response.data;
 };
+
+/**
+ * Creates a new deployment for a specific application.
+ * @param {Object} deployment - The deployment to create.
+ * @param {string} deployment.applicationId - The ID of the application.
+ * @param {string} deployment.name - The name of the deployment.
+ * @param {string} deployment.image - The image used for the deployment.
+ * @returns {Promise<Deployment>} - The created deployment.
+ */
+export const createDeployment = async (deployment: { applicationId: string; name: string; image: string }): Promise<Deployment> => {
+  const response = await axios.post(`${API_BASE_URL}/api/deployments`, deployment);
+  return response.data;
+};
+
+/**
+ * Creates a deployment from a YAML definition.
+ * @param {Object} yamlDeployment - The deployment defined in YAML.
+ * @param {string} yamlDeployment.applicationId - The ID of the application.
+ * @param {string} yamlDeployment.yamlDefinition - The YAML definition string.
+ * @returns {Promise<Deployment>} - The created deployment.
+ */
+export const createDeploymentFromYaml = async (yamlDeployment: { applicationId: string; yamlDefinition: string }): Promise<Deployment> => {
+  const response = await axios.post(`${API_BASE_URL}/api/deployments/from-yaml`, yamlDeployment);
+  return response.data;
+};
+
+/**
+ * Fetches the details of a specific deployment.
+ * @param {string} deploymentId - The ID of the deployment to fetch.
+ * @returns {Promise<Deployment>} - The deployment details.
+ */
+export const fetchDeployment = async (deploymentId: string): Promise<Deployment> => {
+  const response = await axios.get(`${API_BASE_URL}/api/deployments/${deploymentId}`);
+  return response.data;
+};
+
+/**
+ * Updates an existing deployment by ID.
+ * @param {string} deploymentId - The ID of the deployment to update.
+ * @param {Object} updates - The updates to apply.
+ * @param {string} [updates.name] - The new name for the deployment.
+ * @param {string} [updates.image] - The new image for the deployment.
+ * @returns {Promise<Deployment>} - The updated deployment object.
+ */
+export const updateDeployment = async (deploymentId: string, updates: { name?: string; image?: string }): Promise<Deployment> => {
+  const response = await axios.patch(`${API_BASE_URL}/api/deployments/${deploymentId}`, updates);
+  return response.data;
+};
+
+/**
+ * Deletes a deployment by ID.
+ * @param {string} deploymentId - The ID of the deployment to delete.
+ * @returns {Promise<void>} - A promise that resolves when the deployment is deleted.
+ */
+export const deleteDeployment = async (deploymentId: string): Promise<void> => {
+  await axios.delete(`${API_BASE_URL}/api/deployments/${deploymentId}`);
+};
+
+/**
+ * Scales a deployment.
+ * @param {string} deploymentId - The ID of the deployment to scale.
+ * @param {number} replicas - The number of replicas to scale to.
+ * @returns {Promise<Deployment>} - The scaled deployment.
+ */
+export const scaleDeployment = async (deploymentId: string, replicas: number): Promise<Deployment> => {
+  const response = await axios.patch(`${API_BASE_URL}/api/deployments/${deploymentId}/scale`, { replicas });
+  return response.data;
+};
+
+/**
+ * Retrieves the history of a specific deployment.
+ * @param {string} deploymentId - The ID of the deployment.
+ * @returns {Promise<any>} - The deployment history.
+ */
+export const fetchDeploymentHistory = async (deploymentId: string): Promise<any> => {
+  const response = await axios.get(`${API_BASE_URL}/api/deployments/${deploymentId}/history`);
+  return response.data;
+};
+
+/**
+ * Rolls back a deployment to a specified revision.
+ * @param {string} deploymentId - The ID of the deployment.
+ * @param {number} revision - The revision to roll back to.
+ * @returns {Promise<Deployment>} - The rolled back deployment.
+ */
+export const rollbackDeployment = async (deploymentId: string, revision: number): Promise<Deployment> => {
+  const response = await axios.post(`${API_BASE_URL}/api/deployments/${deploymentId}/rollback`, { revision });
+  return response.data;
+};

@@ -46,6 +46,8 @@ const getColorFromName = (name: string): string => {
  * @property {Application} application - The application data to display.
  * @property {() => void} onEdit - Callback function for editing the application.
  * @property {() => void} onDelete - Callback function for deleting the application.
+ * @property {() => void} onRefresh - Callback function for refreshing the application.
+ * @property {boolean} isRefreshing - Flag indicating if the application is refreshing.
  */
 interface ApplicationCardProps {
   application: Application;

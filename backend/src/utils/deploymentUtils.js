@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 import Deployment from "../models/Deployment.js";
-import { checkOpenShiftDeploymentExists, getOpenshiftDeploymentDetails } from "../services/openshiftApi.js";
+import { checkOpenShiftDeploymentExists, getOpenshiftDeployment } from "../services/openshiftApi.js";
+import error from "./errorUtils.js";
 
 const MIN_UPDATE_INTERVAL = 5 * 60 * 1000;
 
@@ -76,6 +77,9 @@ export const updateDeploymentStatus = async (deployment, openShiftData) => {
     ...(openShiftData.spec.template.metadata.labels || {}),
   };
   deployment.selector = openShiftData.spec.selector?.matchLabels || {};
+  deployment.kind = openShiftData.kind;
+  deployment.metadata = openShiftData.metadata;
+  deployment.spec = openShiftData.spec;
   deployment.lastUpdated = Date.now();
 
   // Update lastUpdated timestamp and sync status
@@ -96,7 +100,7 @@ export const fetchAndUpdateDeploymentById = async (deploymentId, forceRefresh = 
   try {
     const deployment = await Deployment.findById(deploymentId);
     if (!deployment) {
-      throw new Error("Deployment not found");
+      throw error(404, "Deployment not found");
     }
     return await fetchAndUpdateDeployment(deployment, forceRefresh);
   } catch (error) {
@@ -107,7 +111,7 @@ export const fetchAndUpdateDeploymentById = async (deploymentId, forceRefresh = 
 
 export const fetchAndUpdateDeployment = async (deployment, forceRefresh = false) => {
   try {
-    const openShiftData = await getOpenshiftDeploymentDetails(deployment.name);
+    const openShiftData = await getOpenshiftDeployment(deployment.name);
     const lastUpdatedTimestamp =
       deployment.lastUpdated instanceof Date ? deployment.lastUpdated.getTime() : Date.now() - MIN_UPDATE_INTERVAL + 1;
     const needsUpdate = forceRefresh || Date.now() - lastUpdatedTimestamp > MIN_UPDATE_INTERVAL;

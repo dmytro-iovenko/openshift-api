@@ -8,11 +8,11 @@ import {
   updateOpenshiftDeployment,
   createOpenshiftDeploymentFromYaml,
 } from "../services/openshiftApi.js";
-import { updateDeploymentStatus } from "../utils/deploymentUtils.js";
+import { fetchAndUpdateDeployment, updateDeploymentStatus } from "../utils/deploymentUtils.js";
 import error from "../utils/errorUtils.js";
+import logger from "../utils/logger.js";
 import schema from "../schemas/deploymentSchema.js";
 import { validationResult, body } from "express-validator";
-import logger from "../utils/logger.js";
 
 const ajv = new Ajv();
 const validate = ajv.compile(schema);
@@ -21,11 +21,11 @@ const validate = ajv.compile(schema);
 const validateCreateDeployment = [
   body("applicationId").notEmpty().withMessage("Application ID is required."),
   body("name").notEmpty().withMessage("Deployment name is required."),
-  body("image").notEmpty().isURL().withMessage("Image must be a valid URL."),
+  body("image").notEmpty().isString().withMessage("Image must be a valid string."),
 ];
 const validateUpdateDeployment = [
   body("name").optional().notEmpty().withMessage("Name cannot be empty."),
-  body("image").optional().isURL().withMessage("Image must be a valid URL."),
+  body("image").notEmpty().isString().withMessage("Image must be a valid string."),
 ];
 const validateDeploymentFromYaml = [
   body("yamlDefinition").notEmpty().withMessage("YAML definition is required."),
@@ -101,7 +101,7 @@ export const createDeploymentFromYaml = validateDeploymentFromYaml.concat(async 
     return next(error(400, "YAML definition is required"));
   }
 
-  logger.debug("Creating deployment from YAML:", yamlDefinition);
+  logger.debug("Creating deployment from YAML:", { yamlDefinition });
 
   try {
     // Validate and parse YAML
@@ -144,40 +144,52 @@ export const getDeployments = async (req, res, next) => {
   logger.debug("Retrieving all deployments.");
 
   try {
-    const deployments = await Deployment.find().populate({
-      path: "applicationId",
-      select: "name slug",
-    });
+    const deployments = await Deployment.find().populate("applicationId");
 
-    res.status(200).json(deployments);
+    // Transform the deployments to include application details in a separate field
+    const transformedDeployments = deployments.map((deployment) => ({
+      ...deployment.toObject(),
+      application: { ...deployment.applicationId.toObject(), deployments: undefined },
+      applicationId: deployment.applicationId._id,
+    }));
+
+    res.status(200).json(transformedDeployments);
   } catch (err) {
     next(err);
   }
 };
 
 /**
- * Retrieves the details of a specific deployment by its ID.
+ * Retrieves a specific deployment by its ID.
  *
  * @async
- * @function getDeploymentDetails
+ * @function getDeployment
  * @param {Object} req - The request object containing the deployment ID in params.
  * @param {Object} res - The response object for sending back the deployment details.
  * @param {Function} next - The next middleware function.
  * @returns {Promise<void>} A promise that resolves when the deployment details are retrieved.
  */
-export const getDeploymentDetails = async (req, res, next) => {
+export const getDeployment = async (req, res, next) => {
   const { deploymentId } = req.params;
 
-  logger.debug("Retrieving deployment details:", deploymentId);
+  logger.debug("Retrieving deployment details:", { deploymentId });
 
   try {
-    const deployment = await Deployment.findById(deploymentId);
+    const deployment = await Deployment.findById(deploymentId).populate("applicationId");
     if (!deployment) {
       return next(error(404, "Deployment not found"));
     }
+    const deploymentData = await fetchAndUpdateDeployment(deployment, true);
 
-    const deploymentData = await getOpenshiftDeploymentDetails(deployment.name);
-    res.status(200).json(deploymentData);
+    // console.log(deploymentData);
+    // Transform the deployments to include application details in a separate field
+    const transformedDeployment = {
+      ...deploymentData,
+      application: { ...deploymentData.applicationId, deployments: undefined },
+      applicationId: deploymentData.applicationId._id,
+    };
+
+    res.status(200).json(transformedDeployment);
   } catch (err) {
     next(err);
   }
@@ -197,7 +209,7 @@ export const updateDeployment = validateUpdateDeployment.concat(async (req, res,
   const { deploymentId } = req.params;
   const { name, image } = req.body;
 
-  logger.debug("Updating deployment:", deploymentId, name, image);
+  logger.debug("Updating deployment:", { deploymentId, name, image });
 
   try {
     // Validate input
@@ -241,7 +253,7 @@ export const updateDeployment = validateUpdateDeployment.concat(async (req, res,
 export const deleteDeployment = async (req, res, next) => {
   const { deploymentId } = req.params;
 
-  logger.debug("Deleting deployment:", deploymentId);
+  logger.debug("Deleting deployment:", { deploymentId });
 
   try {
     const deployment = await Deployment.findById(deploymentId);
@@ -282,7 +294,7 @@ export const scaleDeployment = async (req, res, next) => {
   const { deploymentId } = req.params;
   const { replicas } = req.body;
 
-  logger.debug("Scaling deployment:", deploymentId, "to replicas:", replicas);
+  logger.debug(`Scaling deployment: ${deploymentId} to replicas: ${replicas}`);
 
   try {
     const deployment = await Deployment.findById(deploymentId);
@@ -312,7 +324,7 @@ export const scaleDeployment = async (req, res, next) => {
 export const getDeploymentHistory = async (req, res, next) => {
   const { deploymentId } = req.params;
 
-  logger.debug("Retrieving deployment history:", deploymentId);
+  logger.debug("Retrieving deployment history:", { deploymentId });
 
   try {
     const deployment = await Deployment.findById(deploymentId);
@@ -341,7 +353,7 @@ export const rollbackDeployment = async (req, res, next) => {
   const { deploymentId } = req.params;
   const { revision } = req.body;
 
-  logger.debug("Rolling back deployment:", deploymentId, "to revision:", revision);
+  logger.debug(`Rolling back deployment: ${deploymentId} to revision: ${revision}`);
 
   try {
     const deployment = await Deployment.findById(deploymentId);

@@ -3,7 +3,7 @@ import {
   createDeployment,
   createDeploymentFromYaml,
   getDeployments,
-  getDeploymentDetails,
+  getDeployment,
   updateDeployment,
   deleteDeployment,
   scaleDeployment,
@@ -17,7 +17,7 @@ const router = express.Router();
 router.post("/", createDeployment); // Create a new deployment
 router.post("/from-yaml", createDeploymentFromYaml); // Create a deployment from YAML
 router.get("/", getDeployments); // Retrieve all deployments
-router.get("/:deploymentId", getDeploymentDetails); // Get details of a specific deployment
+router.get("/:deploymentId", getDeployment); // Retrieve a specific deployment
 router.patch("/:deploymentId", updateDeployment); // Update an existing deployment
 router.delete("/:deploymentId", deleteDeployment); // Delete a deployment
 router.patch("/:deploymentId/scale", scaleDeployment); // Scale a deployment

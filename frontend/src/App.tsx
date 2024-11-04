@@ -7,6 +7,7 @@ import Applications from "./pages/Applications";
 import ApplicationDetails from "./pages/ApplicationDetails";
 import BreadcrumbsProvider from "./context/BreadcrumbsContext";
 import NotificationProvider from "./context/NotificationContext";
+import Deployments from "./pages/Deployments";
 
 /**
  * Main application component that sets up the theme and layout.
@@ -21,6 +22,7 @@ const App: React.FC = (): JSX.Element => (
             <Routes>
               <Route path="/" element={<Applications />} />
               <Route path="/applications/:slug" element={<ApplicationDetails />} />
+              <Route path="/deployments" element={<Deployments />} />
             </Routes>
           </MainLayout>
         </Router>

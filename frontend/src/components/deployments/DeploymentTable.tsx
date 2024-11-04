@@ -66,14 +66,14 @@ const DeploymentTable: React.FC<DeploymentTableProps> = ({ deployments, loading 
 
   // Define columns for the data grid
   const columns: GridColDef[] = [
-    { field: "name", headerName: "Deployment Name", flex: 1, minWidth: 150 },
+    { field: "name", headerName: "Deployment Name", flex: 1, minWidth: 100 },
     { field: "status", headerName: "Status", flex: 1, minWidth: 100 },
     { field: "availability", headerName: "Availability", flex: 1, minWidth: 100 },
     {
       field: "labels",
       headerName: "Labels",
       flex: 1,
-      minWidth: 150,
+      minWidth: 100,
       renderCell: (params) => (
         <Box>
           {params.value.map((label: string) => (

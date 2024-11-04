@@ -13,6 +13,7 @@ import {
   getOpenshiftDeployments,
 } from "../services/openshiftApi.js";
 import { body, validationResult } from "express-validator";
+import logger from "../utils/logger.js";
 
 // Validation rules
 const validateApplication = [

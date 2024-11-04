@@ -1,3 +1,5 @@
+import { Application } from "./Application";
+
 /**
  * Represents details of an OpenShift deployment.
  */
@@ -74,6 +76,7 @@ export interface Deployment {
   createdAt: string; // Creation timestamp
   updatedAt: string; // Last updated timestamp
   applicationId: string; // ID of the application this deployment belongs to
+  application: Application; // ID of the application this deployment belongs to
   replicas: number; // Total desired replicas
   availableReplicas: number; // Available replicas
   unavailableReplicas: number; // Unavailable replicas

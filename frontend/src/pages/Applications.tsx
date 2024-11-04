@@ -98,8 +98,8 @@ const Applications: React.FC = (): JSX.Element => {
         addNotification("Application created successfully!", "success");
       }
     } catch (error) {
-      console.error("Operation failed:", error);
-      addNotification("Operation failed. Please try again.", "error");
+      console.error("Error during application submission:", error);
+      addNotification("Error saving application. Please try again.", "error");
     }
   };
 

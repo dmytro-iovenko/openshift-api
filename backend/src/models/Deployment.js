@@ -47,6 +47,45 @@ const DeploymentSchema = new mongoose.Schema(
     strategy: { type: String },
     revision: { type: Number },
     selector: { type: Object, default: {} },
+    metadata: {
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        labels: { type: "object" },
+      },
+      required: ["name"],
+    },
+    spec: {
+      type: "object",
+      properties: {
+        replicas: { type: "integer" },
+        selector: { type: "object" },
+        template: {
+          type: "object",
+          properties: {
+            metadata: { type: "object" },
+            spec: {
+              type: "object",
+              properties: {
+                containers: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      name: { type: "string" },
+                      image: { type: "string" },
+                    },
+                    required: ["name", "image"],
+                  },
+                },
+              },
+            },
+          },
+          required: ["metadata", "spec"],
+        },
+      },
+      required: ["replicas", "selector", "template"],
+    },
     lastUpdated: { type: Date },
     lastSyncTime: { type: Date },
     lastSyncStatus: { type: String, default: "Unknown" },
