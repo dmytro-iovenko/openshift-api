@@ -79,9 +79,27 @@ export const fetchDeployments = async (): Promise<Deployment[]> => {
  * @param {string} deployment.applicationId - The ID of the application.
  * @param {string} deployment.name - The name of the deployment.
  * @param {string} deployment.image - The image used for the deployment.
+ * @param {number} deployment.replicas - The number of replicas to create.
+ * @param {boolean} deployment.paused - Whether the deployment is paused.
+ * @param {Object[]} deployment.envVars - The environment variables to set.
+ * @param {string} deployment.envVars.name - The name of the environment variable.
+ * @param {string} deployment.envVars.value - The value of the environment variable.
+ * @param {string} deployment.strategy - The deployment strategy type to use.
+ * @param {string} deployment.maxUnavailable - The maximum number of unavailable replicas during a rolling update.
+ * @param {string} deployment.maxSurge - The maximum number of replicas that can be created over the desired number.
  * @returns {Promise<Deployment>} - The created deployment.
  */
-export const createDeployment = async (deployment: { applicationId: string; name: string; image: string }): Promise<Deployment> => {
+export const createDeployment = async (deployment: {
+  applicationId: string;
+  name: string;
+  image: string;
+  replicas: number;
+  paused: boolean;
+  envVars: { name: string; value: string }[];
+  strategy: string;
+  maxUnavailable: string;
+  maxSurge: string;
+}): Promise<Deployment> => {
   const response = await axios.post(`${API_BASE_URL}/api/deployments`, deployment);
   return response.data;
 };
@@ -93,7 +111,10 @@ export const createDeployment = async (deployment: { applicationId: string; name
  * @param {string} yamlDeployment.yamlDefinition - The YAML definition string.
  * @returns {Promise<Deployment>} - The created deployment.
  */
-export const createDeploymentFromYaml = async (yamlDeployment: { applicationId: string; yamlDefinition: string }): Promise<Deployment> => {
+export const createDeploymentFromYaml = async (yamlDeployment: {
+  applicationId: string;
+  yamlDefinition: string;
+}): Promise<Deployment> => {
   const response = await axios.post(`${API_BASE_URL}/api/deployments/from-yaml`, yamlDeployment);
   return response.data;
 };
@@ -116,7 +137,10 @@ export const fetchDeployment = async (deploymentId: string): Promise<Deployment>
  * @param {string} [updates.image] - The new image for the deployment.
  * @returns {Promise<Deployment>} - The updated deployment object.
  */
-export const updateDeployment = async (deploymentId: string, updates: { name?: string; image?: string }): Promise<Deployment> => {
+export const updateDeployment = async (
+  deploymentId: string,
+  updates: { name?: string; image?: string }
+): Promise<Deployment> => {
   const response = await axios.patch(`${API_BASE_URL}/api/deployments/${deploymentId}`, updates);
   return response.data;
 };

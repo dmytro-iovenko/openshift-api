@@ -93,7 +93,19 @@ const Deployments: React.FC = (): JSX.Element => {
    * @returns {Promise<void>} A promise that resolves when the operation is complete.
    */
   const handleFormSubmit = async (
-    data: { appId: string; name: string; image: string } | { appId: string; yaml: string }
+    data:
+      | {
+          appId: string;
+          name: string;
+          image: string;
+          replicas: number;
+          paused: boolean;
+          envVars: { name: string; value: string }[];
+          strategy: string;
+          maxUnavailable: string;
+          maxSurge: string;
+        }
+      | { appId: string; yaml: string }
   ) => {
     try {
       if (currentDeployment) {
@@ -113,11 +125,10 @@ const Deployments: React.FC = (): JSX.Element => {
           "yaml" in data
             ? await createDeploymentFromYaml({ applicationId: data.appId, yamlDefinition: data.yaml })
             : await createDeployment({ applicationId: data.appId, ...data });
+        console.log("New deployment:", newDeployment);
         setDeployments([...deployments, newDeployment]);
         addNotification("Deployment created successfully!", "success");
       }
-      // await refreshDeployments();
-      addNotification("Deployment saved successfully!", "success");
     } catch (error) {
       console.error("Error during deployment submission:", error);
       addNotification("Error saving deployment. Please try again.", "error");
@@ -257,7 +268,7 @@ const Deployments: React.FC = (): JSX.Element => {
                   onDelete={() => showDialog("confirmDelete", () => handleDelete(deployment._id))}
                   onRefresh={() => refreshDeployment(deployment._id)}
                   isRefreshing={isRefreshing || isAppRefreshing === deployment._id}
-              />
+                />
               </Grid>
             ))}
           </Grid>
@@ -268,7 +279,17 @@ const Deployments: React.FC = (): JSX.Element => {
               onSubmit={handleFormSubmit}
               initialData={
                 currentDeployment
-                  ? { name: currentDeployment.name, image: currentDeployment.image, yaml: "" }
+                  ? {
+                      name: currentDeployment.name,
+                      image: currentDeployment.image,
+                      replicas: currentDeployment.replicas,
+                      paused: currentDeployment.paused || false,
+                      envVars: currentDeployment.envVars.map((envVar) => ({ name: envVar.name, value: envVar.value })),
+                      strategy: currentDeployment.strategy,
+                      maxUnavailable: currentDeployment.maxUnavailable,
+                      maxSurge: currentDeployment.maxSurge,
+                      yaml: "",
+                    }
                   : undefined
               }
               applications={applications}

@@ -8,7 +8,12 @@ import {
   updateOpenshiftDeployment,
   createOpenshiftDeploymentFromYaml,
 } from "../services/openshiftApi.js";
-import { fetchAndUpdateDeployment, updateDeploymentStatus } from "../utils/deploymentUtils.js";
+import { generateBaseSlug } from "../utils/applicationUtils.js";
+import {
+  fetchAndUpdateDeployment,
+  generateUniqueDeploymentName,
+  updateDeploymentStatus,
+} from "../utils/deploymentUtils.js";
 import error from "../utils/errorUtils.js";
 import logger from "../utils/logger.js";
 import schema from "../schemas/deploymentSchema.js";
@@ -43,9 +48,22 @@ const validateDeploymentFromYaml = [
  * @returns {Promise<void>} A promise that resolves when the deployment is created.
  */
 export const createDeployment = validateCreateDeployment.concat(async (req, res, next) => {
-  const { applicationId, name, image } = req.body;
+  const { applicationId, name, image, replicas, paused, envVars, strategy, maxUnavailable, maxSurge } = req.body;
 
-  logger.debug("Creating deployment:", { applicationId, name, image });
+  logger.debug(
+    "Creating deployment:" +
+      JSON.stringify({
+        applicationId,
+        name,
+        image,
+        replicas,
+        paused,
+        envVars,
+        strategy,
+        maxUnavailable,
+        maxSurge,
+      })
+  );
 
   try {
     // Validate input
@@ -60,12 +78,28 @@ export const createDeployment = validateCreateDeployment.concat(async (req, res,
       return next(error(404, "Application not found"));
     }
 
+    const slug = await generateBaseSlug(name);
+    const uniqueDeploymentName = await generateUniqueDeploymentName(slug);
+
     // Create deployment in OpenShift
-    const deploymentData = await createOpenshiftDeployment(name, image);
+    const deploymentData = await createOpenshiftDeployment(
+      uniqueDeploymentName,
+      image,
+      replicas,
+      paused,
+      envVars,
+      strategy,
+      maxUnavailable,
+      maxSurge
+    );
     const deployment = new Deployment({
       applicationId,
       name: deploymentData.metadata.name,
       image,
+      replicas,
+      strategy,
+      // maxUnavailable,
+      // maxSurge,
     });
     const savedDeployment = await deployment.save();
 
@@ -76,7 +110,14 @@ export const createDeployment = validateCreateDeployment.concat(async (req, res,
     // Update the deployment status and other fields using the returned deployment object
     await updateDeploymentStatus(savedDeployment, deploymentData);
 
-    res.status(201).json(savedDeployment);
+    // Transform the deployments to include application details in a separate field
+    const transformedDeployment = {
+      ...savedDeployment.toObject(),
+      application: { ...application.toObject(), deployments: undefined },
+      applicationId: application._id,
+    };
+
+    res.status(201).json(transformedDeployment);
   } catch (err) {
     next(err);
   }
@@ -207,9 +248,11 @@ export const getDeployment = async (req, res, next) => {
  */
 export const updateDeployment = validateUpdateDeployment.concat(async (req, res, next) => {
   const { deploymentId } = req.params;
-  const { name, image } = req.body;
+  // const { name, image } = req.body;
+  // const { name, image, replicas, paused, envVars, strategy, maxUnavailable, maxSurge } = req.body;
+  const updatedData = req.body;
 
-  logger.debug("Updating deployment:", { deploymentId, name, image });
+  logger.debug("Updating deployment:", { deploymentId, updatedData });
 
   try {
     // Validate input
@@ -218,23 +261,60 @@ export const updateDeployment = validateUpdateDeployment.concat(async (req, res,
       return next(error(400, "Validation errors: " + JSON.stringify(errors.array())));
     }
 
-    const deployment = await Deployment.findById(deploymentId);
+    const deployment = await Deployment.findById(deploymentId).populate("applicationId");
     if (!deployment) {
       return next(error(404, "Deployment not found"));
     }
 
+    // const deploymentData = await fetchAndUpdateDeployment(deployment, true);
+
+    // const updatedData = {
+    //   ...deploymentData.openShiftDetails,
+    // };
+
+    // // Update nested fields correctly
+    // updatedData.metadata.name = name;
+    // updatedData.spec.replicas = replicas;
+    // updatedData.spec.template.spec.containers[0].image = image;
+    // updatedData.spec.template.spec.containers[0].env = envVars.map((envVar) => ({
+    //   name: envVar.name,
+    //   value: envVar.value,
+    // }));
+
+    // // Handle the strategy
+    // updatedData.spec.strategy.type = strategy;
+    // if (strategy === "RollingUpdate") {
+    //   updatedData.spec.strategy.rollingUpdate = {
+    //     maxUnavailable,
+    //     maxSurge,
+    //   };
+    // } else {
+    //   delete updatedData.spec.strategy.rollingUpdate;
+    // }
+
+    // console.log("updatedData", updatedData);
+
     // Update deployment in OpenShift
-    const updatedDeploymentData = await updateOpenshiftDeployment(deployment.name, { name, image });
+    const updatedDeploymentData = await updateOpenshiftDeployment(deployment.name, updatedData);
 
     // Update the local deployment record in MongoDB
-    deployment.name = updatedDeploymentData.metadata.name;
-    deployment.image = image;
-    await deployment.save();
+    // deployment.name = updatedDeploymentData.metadata.name;
+    // deployment.image = image;
+    // await deployment.save();
 
     // Update deployment status with the latest data
     await updateDeploymentStatus(deployment, updatedDeploymentData);
 
-    res.status(200).json(deployment);
+    console.log("updatedDeploymentData", updatedDeploymentData);
+    console.log("deployment", deployment);
+    // Transform the deployments to include application details in a separate field
+    const transformedDeployment = {
+      ...deployment.toObject(),
+      application: { ...deployment.applicationId.toObject(), deployments: undefined },
+      applicationId: deployment.applicationId._id,
+    };
+
+    res.status(200).json(transformedDeployment);
   } catch (err) {
     next(err);
   }

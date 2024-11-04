@@ -18,16 +18,58 @@ const NAMESPACE = process.env.OPENSHIFT_NAMESPACE;
  */
 export const openshiftRequest = async (method, url, data = {}) => {
   const headers = {
-    "Content-Type": "application/json",
     Authorization: `Bearer ${AUTH_TOKEN}`,
   };
+
+  // Set the Content-Type based on the method
+  if (method === "PATCH") {
+    headers["Content-Type"] = "application/strategic-merge-patch+json";
+  } else {
+    headers["Content-Type"] = "application/json";
+  }
 
   try {
     const response = await axios({ method, url, data, headers });
     return response.data;
   } catch (error) {
+    console.error(`OpenShift API request failed: ${JSON.stringify(error)}`);
     throw customError(error.response?.status || 500, error.response?.data?.message || "OpenShift API request failed");
   }
+};
+
+const getDeploymentConfig = (data) => {
+  return {
+    apiVersion: "apps/v1",
+    kind: "Deployment",
+    metadata: { name: data.name, labels: { app: data.name } },
+    spec: {
+      replicas: Number(data.replicas),
+      selector: { matchLabels: { app: data.name } },
+      template: {
+        metadata: { labels: { app: data.name } },
+        spec: {
+          containers: [
+            {
+              name: "container",
+              image: data.image,
+              ports: [{ containerPort: 8080, protocol: "TCP" }],
+              env: data.envVars.map((envVar) => ({ name: envVar.name, value: envVar.value })),
+            },
+          ],
+        },
+      },
+      strategy: {
+        type: data.strategy,
+        ...(data.strategy === "RollingUpdate" && {
+          rollingUpdate: {
+            maxUnavailable: data.maxUnavailable,
+            maxSurge: data.maxSurge,
+          },
+        }),
+      },
+      paused: data.paused,
+    },
+  };
 };
 
 /**
@@ -56,31 +98,16 @@ export const checkOpenShiftDeploymentExists = async (deploymentName) => {
  * @param {string} image - The Docker image for the deployment.
  * @returns {Promise<object>} - The created deployment data.
  */
-export const createOpenshiftDeployment = async (name, image) => {
-  const deploymentConfig = {
-    apiVersion: "apps/v1",
-    kind: "Deployment",
-    metadata: { name, labels: { app: name } },
-    spec: {
-      replicas: 1,
-      selector: { matchLabels: { app: name } },
-      template: {
-        metadata: { labels: { app: name } },
-        spec: { containers: [{ name, image, ports: [{ containerPort: 8080 }] }] },
-      },
-    },
-  };
-
+export const createOpenshiftDeployment = async (deploymentData) => {
+  const deploymentConfig = getDeploymentConfig(deploymentData);
   const url = `${API_URL}/apis/apps/v1/namespaces/${NAMESPACE}/deployments`;
   return await openshiftRequest("POST", url, deploymentConfig); // Call the API to create the deployment
 };
-
 
 export const createOpenshiftDeploymentFromYaml = async (yamlObject) => {
   const url = `${API_URL}/apis/apps/v1/namespaces/${NAMESPACE}/deployments`;
   return await openshiftRequest("POST", url, yamlObject); // Directly use the YAML object
 };
-
 
 /**
  * Deletes a deployment from OpenShift.
@@ -124,12 +151,9 @@ export const getOpenshiftDeployment = async (name) => {
  * @throws Will throw an error if the request fails.
  */
 export const updateOpenshiftDeployment = async (name, updateData) => {
-  try {
-    const response = await axios.patch(`/apis/apps/v1/namespaces/${NAMESPACE}/deployments/${name}`, updateData);
-    return response.data;
-  } catch (error) {
-    throw new Error(`Failed to update deployment: ${error.message}`);
-  }
+  const deploymentConfig = getDeploymentConfig(updateData);
+  const url = `${API_URL}/apis/apps/v1/namespaces/${NAMESPACE}/deployments/${name}`;
+  return await openshiftRequest("PATCH", url, deploymentConfig); // Call the API to update the deployment
 };
 
 /**
@@ -182,5 +206,3 @@ export const rollbackOpenshiftDeployment = async (name, revision) => {
   const url = `${API_URL}/apis/apps/v1/namespaces/${NAMESPACE}/deployments/${name}/rollback`;
   return await openshiftRequest("POST", url, rollbackData);
 };
-
-

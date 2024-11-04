@@ -62,6 +62,8 @@ export const updateDeploymentStatus = async (deployment, openShiftData) => {
   }
 
   // Update fields
+  deployment.name = openShiftData.metadata.name;
+  deployment.image = openShiftData.spec.template.spec.containers[0].image;
   deployment.status = status;
   deployment.replicas = openShiftData.spec.replicas || 0;
   deployment.availableReplicas = openShiftData.status.availableReplicas || 0;
@@ -77,6 +79,11 @@ export const updateDeploymentStatus = async (deployment, openShiftData) => {
     ...(openShiftData.spec.template.metadata.labels || {}),
   };
   deployment.selector = openShiftData.spec.selector?.matchLabels || {};
+  deployment.paused = openShiftData.spec.paused || false,
+  deployment.envVars = openShiftData.spec.template.spec.containers[0].env?.map((envVar) => ({ name: envVar.name, value: envVar.value })) || [],
+  deployment.maxUnavailable = openShiftData.spec.strategy.rollingUpdate?.maxUnavailable || undefined,
+  deployment.maxSurge = openShiftData.spec.strategy.rollingUpdate?.maxSurge || undefined,
+
   deployment.kind = openShiftData.kind;
   deployment.metadata = openShiftData.metadata;
   deployment.spec = openShiftData.spec;

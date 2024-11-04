@@ -30,7 +30,7 @@ const ApplicationStatusChart: React.FC<ApplicationPieChartProps> = ({ deployment
 
   // Calculate health percentage
   const healthScore = availableDeployments * 1 - notAvailableDeployments * 2 - notProgressingDeployments * 0.5;
-  const healthPercentage = totalDeployments > 0 ? (healthScore / (totalDeployments * 2)) * 100 : 0;
+  const healthPercentage = totalDeployments > 0 ? (healthScore / totalDeployments) * 100 : 0;
 
   // Determine health status based on health percentage
   let healthStatus = "Healthy";

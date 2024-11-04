@@ -88,7 +88,12 @@ export interface Deployment {
     reason: string; // Reason for the condition
     message: string; // Human-readable message indicating details about the condition
   }>; // Conditions for the deployment
-  labels: Record<string, string>; // Labels for the deployment
+  labels: Record<string, string>[]; // Labels for the deployment
   selector: Record<string, string>; // Pod selector for the deployment
   age: string; // Age of the deployment, typically calculated as time since created
+  envVars: Record<string, string>[]; // Environment variables for the deployment
+  paused: boolean; // Whether the deployment is paused
+  strategy: string; // Update strategy for the deployment
+  maxSurge: string; // Maximum number of pods that can be created over desired replicas
+  maxUnavailable: string; // Maximum number of unavailable pods during update
 }
