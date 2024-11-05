@@ -100,6 +100,7 @@ export const createDeployment = async (deployment: {
   maxUnavailable: string;
   maxSurge: string;
 }): Promise<Deployment> => {
+  console.log("createDeployment", deployment);
   const response = await axios.post(`${API_BASE_URL}/api/deployments`, deployment);
   return response.data;
 };

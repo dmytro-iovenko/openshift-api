@@ -17,6 +17,7 @@
     "@mui/material": "^6.1.5",
     "@mui/x-charts": "^7.22.0",
     "@mui/x-data-grid": "^7.22.0",
+    "@toolpad/core": "^0.8.1",
     "axios": "^1.7.7",
     "dotenv": "^16.4.5",
     "frontend": "file:",

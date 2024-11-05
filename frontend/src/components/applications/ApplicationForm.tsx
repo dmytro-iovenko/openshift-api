@@ -155,7 +155,7 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({
   };
 
   return (
-    <Box sx={{ p: 2, width: 400 }}>
+    <Box sx={{ p: 2 }}>
       <Typography variant="h6" gutterBottom>
         {isEditMode ? "Edit Application" : "Create Application"}
       </Typography>

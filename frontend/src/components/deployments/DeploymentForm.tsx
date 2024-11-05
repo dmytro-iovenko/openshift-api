@@ -196,28 +196,16 @@ const DeploymentForm: React.FC<DeploymentFormProps> = ({
   };
 
   const incrementReplicas = () => {
-    handleChange("replicas", `${Math.max(0, Number(formValues.replicas) + 1)}`)
-    // setFormValues((prev) => ({
-    //   ...prev,
-    //   replicas: prev.replicas + 1,
-    // }));
+    handleChange("replicas", `${Math.max(0, Number(formValues.replicas) + 1)}`);
   };
 
   const decrementReplicas = () => {
-    handleChange("replicas", `${Math.max(0, Number(formValues.replicas) - 1)}`)
-    // setFormValues((prev) => ({
-    //   ...prev,
-    //   replicas: Math.max(0, prev.replicas - 1),
-    // }));
+    handleChange("replicas", `${Math.max(0, Number(formValues.replicas) - 1)}`);
   };
 
   const handleReplicasChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = Math.max(0, Number(event.target.value));
-    handleChange("replicas", `${value}`)
-    // setFormValues((prev) => ({
-    //   ...prev,
-    //   replicas: value,
-    // }));
+    handleChange("replicas", `${value}`);
   };
 
   /**
@@ -332,7 +320,7 @@ const DeploymentForm: React.FC<DeploymentFormProps> = ({
   ];
 
   return (
-    <Box sx={{ p: 2, width: 400 }}>
+    <Box sx={{ p: 2 }}>
       <Typography variant="h6" gutterBottom>
         {isEditMode ? "Edit Deployment" : "Add Deployment"}
       </Typography>
@@ -543,24 +531,6 @@ const DeploymentForm: React.FC<DeploymentFormProps> = ({
                 )}
                 {activeStep === 3 && (
                   <StepContent>
-                    {/* Advanced Options Section */}
-                    {/* <Box sx={{ marginBottom: 2 }}>
-                      <Typography variant="subtitle1">Pause rollouts</Typography>
-                      <FormControlLabel
-                        control={
-                          <Checkbox
-                            checked={formValues.paused}
-                            onChange={(e) => handleChange("paused", e.target.checked)}
-                            color="primary"
-                          />
-                        }
-                        label="Pause rollouts for this deployment"
-                      />
-                      <Typography variant="body2" color="textSecondary">
-                        Pausing lets you make changes without triggering a rollout. You can resume rollouts at any time.
-                      </Typography>
-                    </Box> */}
-
                     <Box>
                       <Typography variant="subtitle1">Scaling</Typography>
                       <Typography variant="body2" color="textSecondary">
@@ -632,29 +602,6 @@ const DeploymentForm: React.FC<DeploymentFormProps> = ({
           </Box>
         </>
       )}
-
-      {/* Advanced Image Options */}
-      {/* <Button onClick={() => handleChange("isAdvancedOptionsOpen", !formValues.isAdvancedOptionsOpen)}>
-        {formValues.isAdvancedOptionsOpen ? "Hide Advanced Options" : "Show Advanced Options"}
-      </Button>
-      {formValues.isAdvancedOptionsOpen && (
-        <Box sx={{ mt: 2, mb: 2 }}>
-          <FormControl fullWidth margin="normal">
-            <InputLabel id="pull-secret">Pull Secret</InputLabel>
-            <Select
-              labelId="pull-secret"
-              id="pull-secret"
-              value={formValues.pullSecret}
-              onChange={(e) => handleChange("pullSecret", e.target.value)}>
-              <MenuItem value="">Select Secret name</MenuItem>
-            </Select>
-            <Typography variant="caption" color="text.secondary">
-              Secret for authentication when pulling image from a secured registry.
-            </Typography>
-          </FormControl>
-          <Button variant="outlined">Create new Secret</Button>
-        </Box>
-      )} */}
     </Box>
   );
 };

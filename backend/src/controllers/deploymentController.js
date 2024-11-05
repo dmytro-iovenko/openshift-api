@@ -82,8 +82,8 @@ export const createDeployment = validateCreateDeployment.concat(async (req, res,
     const uniqueDeploymentName = await generateUniqueDeploymentName(slug);
 
     // Create deployment in OpenShift
-    const deploymentData = await createOpenshiftDeployment(
-      uniqueDeploymentName,
+    const deploymentData = await createOpenshiftDeployment({
+      name: uniqueDeploymentName,
       image,
       replicas,
       paused,
@@ -91,7 +91,7 @@ export const createDeployment = validateCreateDeployment.concat(async (req, res,
       strategy,
       maxUnavailable,
       maxSurge
-    );
+    });
     const deployment = new Deployment({
       applicationId,
       name: deploymentData.metadata.name,
@@ -222,7 +222,6 @@ export const getDeployment = async (req, res, next) => {
     }
     const deploymentData = await fetchAndUpdateDeployment(deployment, true);
 
-    // console.log(deploymentData);
     // Transform the deployments to include application details in a separate field
     const transformedDeployment = {
       ...deploymentData,

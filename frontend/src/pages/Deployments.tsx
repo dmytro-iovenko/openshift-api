@@ -1,15 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { Button, Typography, Box, Drawer } from "@mui/material";
-import Grid from "@mui/material/Grid2";
+import Button from "@mui/material/Button";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import AddCircleTwoToneIcon from "@mui/icons-material/AddCircleTwoTone";
-import DeploymentCard from "../components/deployments/DeploymentCard";
 import DeploymentForm from "../components/deployments/DeploymentForm";
 import ManagedDialogs from "../components/ManagedDialogs";
 import Loader from "../components/Loader";
 import { Deployment } from "../types/Deployment";
 import { Application } from "../types/Application";
-import { useBreadcrumbs } from "../context/BreadcrumbsContext";
 import { useNotification } from "../context/NotificationContext";
 import {
   fetchDeployment,
@@ -18,16 +15,14 @@ import {
   deleteDeployment,
   updateDeployment,
   createDeploymentFromYaml,
+  fetchApplications,
 } from "../services/api";
 import LoadingButton from "@mui/lab/LoadingButton";
+import DeploymentTable from "../components/deployments/DeploymentTable";
+import DrawerWithForm from "../components/DrawerWithForm";
+import { PageContainer, PageContainerToolbar } from "@toolpad/core";
 
-/**
- * Deployments component to fetch and display a list of deployments.
- * Allows creation, editing, and deletion of deployments.
- * @returns {JSX.Element} The deployments listing UI or loading state.
- */
 const Deployments: React.FC = (): JSX.Element => {
-  const { setBreadcrumbs } = useBreadcrumbs();
   const { addNotification } = useNotification();
   const [deployments, setDeployments] = useState<Deployment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,16 +32,9 @@ const Deployments: React.FC = (): JSX.Element => {
   const [selectedAppId, setSelectedAppId] = useState("");
 
   const [isRefreshing, setIsAllRefreshing] = useState<boolean>(false);
-  const [isAppRefreshing, setIsAppRefreshing] = useState<string | null>(null);
+  const [isDeplRefreshing, setIsDeplRefreshing] = useState<string | null>(null);
 
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-
-  /**
-   * Sets the breadcrumbs when the component mounts.
-   */
-  useEffect(() => {
-    setBreadcrumbs([{ label: "Deployments", path: "/" }]);
-  }, [setBreadcrumbs]);
 
   /**
    * Fetches deployments from the API when the component mounts.
@@ -57,14 +45,15 @@ const Deployments: React.FC = (): JSX.Element => {
     const getDeployments = async () => {
       try {
         const deps = await fetchDeployments();
+        const apps = await fetchApplications();
         if (isMounted) {
           const uniqueAppIds = new Set<string>();
           const appsMap: Record<string, Application> = {};
 
-          deps.forEach((dep) => {
-            if (!uniqueAppIds.has(dep.application._id)) {
-              uniqueAppIds.add(dep.application._id);
-              appsMap[dep.application._id] = dep.application;
+          apps.forEach((app) => {
+            if (!uniqueAppIds.has(app._id)) {
+              uniqueAppIds.add(app._id);
+              appsMap[app._id] = app;
             }
           });
           setApplications(Object.values(appsMap));
@@ -107,6 +96,7 @@ const Deployments: React.FC = (): JSX.Element => {
         }
       | { appId: string; yaml: string }
   ) => {
+    console.log("Form data:", data, currentDeployment);
     try {
       if (currentDeployment) {
         // Update existing deployment
@@ -214,96 +204,99 @@ const Deployments: React.FC = (): JSX.Element => {
    * @param {string} deploymentId - The ID of the deployment to refresh.
    */
   const refreshDeployment = async (deploymentId: string) => {
-    setIsAppRefreshing(deploymentId);
+    setIsDeplRefreshing(deploymentId);
     try {
       const updatedDepl = await fetchDeployment(deploymentId);
-      console.log("Updated deployment:", updatedDepl);
       setDeployments((prev) => prev.map((depl) => (depl._id === updatedDepl._id ? updatedDepl : depl)));
       addNotification(`Deployment "${updatedDepl.name}" refreshed successfully.`, "success");
     } catch (error) {
       console.error("Error fetching deployment:", error);
       addNotification("Failed to refresh deployment. Please try again.", "error");
     } finally {
-      setIsAppRefreshing(null);
+      setIsDeplRefreshing(null);
     }
   };
 
   if (loading) return <Loader />;
 
+  const PageToolbar = () => {
+    return (
+      <PageContainerToolbar>
+        <LoadingButton
+          variant="outlined"
+          color="primary"
+          onClick={handleRefreshAll}
+          loading={isRefreshing}
+          loadingPosition="start"
+          startIcon={<RefreshIcon />}>
+          Refresh All
+        </LoadingButton>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={() => setOpenForm(true)}
+          startIcon={<AddCircleTwoToneIcon />}>
+          Add Deployment
+        </Button>
+      </PageContainerToolbar>
+    );
+  };
+
   return (
-    <ManagedDialogs itemType="deployment">
-      {(showDialog) => (
-        <Grid size={12} p={3}>
-          <Box display="flex" justifyContent="space-between" pb={2} flexWrap="wrap">
-            <Typography variant="h4" gutterBottom>
-              Deployments
-            </Typography>
-            <Box display="flex" flexWrap="wrap" alignItems="start" gap={1}>
-              <LoadingButton
-                variant="outlined"
-                color="primary"
-                onClick={handleRefreshAll}
-                loading={isRefreshing}
-                loadingPosition="start"
-                startIcon={<RefreshIcon />}>
-                Refresh All
-              </LoadingButton>
-
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={() => setOpenForm(true)}
-                startIcon={<AddCircleTwoToneIcon />}>
-                Create new deployment
-              </Button>
-            </Box>
-          </Box>
-
-          <Grid container direction="row" spacing={{ xs: 2, sm: 3 }} columns={12}>
-            {deployments.map((deployment) => (
-              <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={deployment._id}>
-                <DeploymentCard
-                  deployment={deployment}
-                  onEdit={() => handleEdit(deployment)}
-                  onDelete={() => showDialog("confirmDelete", () => handleDelete(deployment._id))}
-                  onRefresh={() => refreshDeployment(deployment._id)}
-                  isRefreshing={isRefreshing || isAppRefreshing === deployment._id}
-                />
-              </Grid>
-            ))}
-          </Grid>
-          <Drawer anchor="right" open={openForm} onClose={() => handleClose(showDialog)}>
-            <DeploymentForm
-              open={openForm}
-              onClose={handleCloseForm}
-              onSubmit={handleFormSubmit}
-              initialData={
-                currentDeployment
-                  ? {
-                      name: currentDeployment.name,
-                      image: currentDeployment.image,
-                      replicas: currentDeployment.replicas,
-                      paused: currentDeployment.paused || false,
-                      envVars: currentDeployment.envVars.map((envVar) => ({ name: envVar.name, value: envVar.value })),
-                      strategy: currentDeployment.strategy,
-                      maxUnavailable: currentDeployment.maxUnavailable,
-                      maxSurge: currentDeployment.maxSurge,
-                      yaml: "",
-                    }
-                  : undefined
-              }
-              applications={applications}
-              selectedAppId={selectedAppId}
-              setSelectedAppId={setSelectedAppId}
-              isEditMode={!!currentDeployment}
-              setHasUnsavedChanges={setHasUnsavedChanges}
-              hasUnsavedChanges={hasUnsavedChanges}
-              showDialog={showDialog}
+    <PageContainer slots={{ toolbar: PageToolbar }} maxWidth={false}>
+      <ManagedDialogs itemType="deployment">
+        {(showDialog) => (
+          <>
+            <DeploymentTable
+              deployments={deployments}
+              loading={loading}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              onRefresh={refreshDeployment}
+              IsDeplRefreshing={isDeplRefreshing}
+              isRefreshing={isRefreshing}
             />
-          </Drawer>
-        </Grid>
-      )}
-    </ManagedDialogs>
+
+            <DrawerWithForm
+              open={openForm}
+              onClose={() => handleClose(showDialog)}
+              formComponent={
+                <DeploymentForm
+                  open={openForm}
+                  onClose={handleCloseForm}
+                  onSubmit={handleFormSubmit}
+                  initialData={
+                    currentDeployment
+                      ? {
+                          name: currentDeployment.name,
+                          image: currentDeployment.image,
+                          replicas: currentDeployment.replicas,
+                          paused: currentDeployment.paused || false,
+                          envVars: currentDeployment.envVars.map((envVar) => ({
+                            name: envVar.name,
+                            value: envVar.value,
+                          })),
+                          strategy: currentDeployment.strategy,
+                          maxUnavailable: currentDeployment.maxUnavailable,
+                          maxSurge: currentDeployment.maxSurge,
+                          yaml: "",
+                        }
+                      : undefined
+                  }
+                  applications={applications}
+                  selectedAppId={selectedAppId}
+                  setSelectedAppId={setSelectedAppId}
+                  isEditMode={!!currentDeployment}
+                  setHasUnsavedChanges={setHasUnsavedChanges}
+                  hasUnsavedChanges={hasUnsavedChanges}
+                  showDialog={showDialog}
+                />
+              }
+            />
+          </>
+        )}
+      </ManagedDialogs>
+    </PageContainer>
   );
 };
 

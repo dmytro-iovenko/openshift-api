@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { Button, Typography, Box, Drawer } from "@mui/material";
+import { useEffect, useState } from "react";
+import Button from "@mui/material/Button";
 import Grid from "@mui/material/Grid2";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import AddCircleTwoToneIcon from "@mui/icons-material/AddCircleTwoTone";
@@ -9,7 +9,6 @@ import ApplicationForm from "../components/applications/ApplicationForm";
 import ManagedDialogs from "../components/ManagedDialogs";
 import Loader from "../components/Loader";
 import { Application } from "../types/Application";
-import { useBreadcrumbs } from "../context/BreadcrumbsContext";
 import { useNotification } from "../context/NotificationContext";
 import {
   createApplication,
@@ -19,14 +18,15 @@ import {
   fetchApplicationBySlug,
 } from "../services/api";
 import LoadingButton from "@mui/lab/LoadingButton";
+import { PageContainer, PageContainerToolbar } from "@toolpad/core";
+import DrawerWithForm from "../components/DrawerWithForm";
 
 /**
  * Applications component to fetch and display a list of applications.
  * Allows creation, editing, and deletion of applications.
  * @returns {JSX.Element} The applications listing UI or loading state.
  */
-const Applications: React.FC = (): JSX.Element => {
-  const { setBreadcrumbs } = useBreadcrumbs();
+const Applications: React.FC<{}> = (): JSX.Element => {
   const { addNotification } = useNotification();
   const [applications, setApplications] = useState<Application[]>([]);
   const [currentApplication, setCurrentApplication] = useState<Application | null>(null);
@@ -36,14 +36,6 @@ const Applications: React.FC = (): JSX.Element => {
   const [isAppRefreshing, setIsAppRefreshing] = useState<string | null>(null);
 
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-
-  /**
-   * Sets the breadcrumbs when the component mounts.
-   */
-  useEffect(() => {
-    const breadcrumbs = [{ label: "Applications", path: "/" }];
-    setBreadcrumbs(breadcrumbs);
-  }, [setBreadcrumbs]);
 
   /**
    * Fetches applications from the API when the component mounts.
@@ -197,74 +189,82 @@ const Applications: React.FC = (): JSX.Element => {
     return <Loader />;
   }
 
+  // preview-start
+  const PageToolbar = () => {
+    return (
+      <PageContainerToolbar>
+        <LoadingButton
+          variant="outlined"
+          color="primary"
+          onClick={handleRefreshAll}
+          loading={isRefreshing}
+          loadingPosition="start"
+          startIcon={<RefreshIcon />}>
+          Refresh All
+        </LoadingButton>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={() => setOpenForm(true)}
+          startIcon={<AddCircleTwoToneIcon />}>
+          Add Application
+        </Button>
+      </PageContainerToolbar>
+    );
+  };
+
+  // preview-end
   return (
-    <ManagedDialogs itemType="application">
-      {(showDialog) => (
-        <Grid size={12} p={3}>
-          <Box display="flex" justifyContent="space-between" pb={2} flexWrap="wrap">
-            <Typography variant="h4" gutterBottom>
-              Applications
-            </Typography>
-            <Box display="flex" flexWrap="wrap" alignItems="start" gap={1}>
-              <LoadingButton
-                variant="outlined"
-                color="primary"
-                onClick={handleRefreshAll}
-                loading={isRefreshing}
-                loadingPosition="start"
-                startIcon={<RefreshIcon />}>
-                Refresh All
-              </LoadingButton>
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={() => setOpenForm(true)}
-                startIcon={<AddCircleTwoToneIcon />}>
-                Create new application
-              </Button>
-            </Box>
-          </Box>
-          <Grid container direction="row" spacing={{ xs: 2, sm: 3 }} columns={12}>
-            {[...applications, undefined].map((app, index) => (
-              <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={app?._id || index}>
-                {app ? (
-                  <ApplicationCard
-                    application={app}
-                    onEdit={() => handleEdit(app)}
-                    onDelete={() => showDialog("confirmDelete", () => handleDelete(app._id))}
-                    onRefresh={() => refreshApplication(app.slug)}
-                    isRefreshing={isRefreshing || isAppRefreshing === app.slug}
-                  />
-                ) : (
-                  <AddApplicationPlaceholder onClick={() => setOpenForm(true)} />
-                )}
-              </Grid>
-            ))}
-          </Grid>
-          <Drawer anchor="right" open={openForm} onClose={() => handleClose(showDialog)}>
-            <ApplicationForm
+    <PageContainer slots={{ toolbar: PageToolbar }} maxWidth={false}>
+      <ManagedDialogs itemType="application">
+        {(showDialog) => (
+          <Grid size={12}>
+            <Grid container direction="row" spacing={{ xs: 2, sm: 3 }} columns={12} sx={{ mt: 2 }}>
+              {[...applications, undefined].map((app, index) => (
+                <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={app?._id || index}>
+                  {app ? (
+                    <ApplicationCard
+                      application={app}
+                      onEdit={() => handleEdit(app)}
+                      onDelete={() => showDialog("confirmDelete", () => handleDelete(app._id))}
+                      onRefresh={() => refreshApplication(app.slug)}
+                      isRefreshing={isRefreshing || isAppRefreshing === app.slug}
+                    />
+                  ) : (
+                    <AddApplicationPlaceholder onClick={() => setOpenForm(true)} />
+                  )}
+                </Grid>
+              ))}
+            </Grid>
+            <DrawerWithForm
               open={openForm}
-              onClose={handleCloseForm}
-              onSubmit={handleFormSubmit}
-              initialData={
-                currentApplication
-                  ? {
-                      name: currentApplication.name,
-                      description: currentApplication.description,
-                      image: currentApplication.image,
-                      slug: currentApplication.slug,
-                    }
-                  : undefined
+              onClose={() => handleClose(showDialog)}
+              formComponent={
+                <ApplicationForm
+                  open={openForm}
+                  onClose={handleCloseForm}
+                  onSubmit={handleFormSubmit}
+                  initialData={
+                    currentApplication
+                      ? {
+                          name: currentApplication.name,
+                          description: currentApplication.description,
+                          image: currentApplication.image,
+                          slug: currentApplication.slug,
+                        }
+                      : undefined
+                  }
+                  isEditMode={!!currentApplication}
+                  setHasUnsavedChanges={setHasUnsavedChanges}
+                  hasUnsavedChanges={hasUnsavedChanges}
+                  showDialog={showDialog}
+                />
               }
-              isEditMode={!!currentApplication}
-              setHasUnsavedChanges={setHasUnsavedChanges}
-              hasUnsavedChanges={hasUnsavedChanges}
-              showDialog={showDialog}
             />
-          </Drawer>
-        </Grid>
-      )}
-    </ManagedDialogs>
+          </Grid>
+        )}
+      </ManagedDialogs>
+    </PageContainer>
   );
 };
 

@@ -53,7 +53,7 @@ const getDeploymentConfig = (data) => {
               name: "container",
               image: data.image,
               ports: [{ containerPort: 8080, protocol: "TCP" }],
-              env: data.envVars.map((envVar) => ({ name: envVar.name, value: envVar.value })),
+              env: data.envVars?.map((envVar) => ({ name: envVar.name, value: envVar.value })),
             },
           ],
         },
@@ -100,6 +100,7 @@ export const checkOpenShiftDeploymentExists = async (deploymentName) => {
  */
 export const createOpenshiftDeployment = async (deploymentData) => {
   const deploymentConfig = getDeploymentConfig(deploymentData);
+  console.log("Deployment Config", deploymentConfig, deploymentData);
   const url = `${API_URL}/apis/apps/v1/namespaces/${NAMESPACE}/deployments`;
   return await openshiftRequest("POST", url, deploymentConfig); // Call the API to create the deployment
 };

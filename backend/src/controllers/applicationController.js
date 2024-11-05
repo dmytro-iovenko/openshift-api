@@ -136,7 +136,14 @@ export const getApplication = async (req, res, next) => {
     }
 
     const updatedDeployments = await Promise.all(
-      application.deployments.map((deploymentId) => fetchAndUpdateDeploymentById(deploymentId, true))
+      application.deployments.map(async (deploymentId) => {
+        const deploymentData = await fetchAndUpdateDeploymentById(deploymentId, true);
+        const transformedDeployment = {
+          ...deploymentData,
+          application: { ...application.toObject(), deployments: undefined },
+        };
+        return transformedDeployment;
+      })
     );
     res.status(200).json({ ...application.toObject(), deployments: updatedDeployments });
   } catch (error) {

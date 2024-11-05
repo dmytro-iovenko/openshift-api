@@ -72,7 +72,7 @@ const ApplicationCard: React.FC<ApplicationCardProps> = ({
 }): JSX.Element => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
-  const navigate = useNavigate();
+    const navigate = useNavigate();
 
   /**
    * Handle navigating to the application details page
