@@ -14,6 +14,7 @@ import {
 } from "../services/openshiftApi.js";
 import { body, validationResult } from "express-validator";
 import logger from "../utils/logger.js";
+import { StatusCodes } from "http-status-codes";
 
 // Validation rules
 const validateApplication = [
@@ -57,17 +58,18 @@ const fetchOpenShiftDeployments = async () => {
  */
 export const createApplication = validateApplication.concat(async (req, res, next) => {
   const { name, description, image } = req.body;
+  const { userId } = req.user;
 
   logger.debug("Creating application:", { name, description, image });
   try {
     // Validate input
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return next(error(400, "Validation errors: " + JSON.stringify(errors.array())));
+      return next(error(StatusCodes.BAD_REQUEST, "Validation errors: " + JSON.stringify(errors.array())));
     }
 
     // Create application and save it in MongoDB
-    const application = new Application({ name, description, image });
+    const application = new Application({ name, description, image, owner: userId });
     const savedApplication = await application.save();
 
     // Create deployment in OpenShift and link it to the application
@@ -89,7 +91,7 @@ export const createApplication = validateApplication.concat(async (req, res, nex
     await updateDeploymentStatus(deploymentDoc, deployment);
     await deploymentDoc.save();
 
-    res.status(201).json(savedApplication);
+    res.status(StatusCodes.CREATED).json(savedApplication);
   } catch (error) {
     next(error);
   }
@@ -106,10 +108,16 @@ export const createApplication = validateApplication.concat(async (req, res, nex
  * @returns {Promise<void>} - Responds with a list of applications.
  */
 export const getApplications = async (req, res, next) => {
+  const { userId, role } = req.user;
   logger.debug("Fetching applications");
   try {
-    const applicationsWithOpenShiftData = await fetchApplicationsWithDeployments();
-    res.status(200).json(applicationsWithOpenShiftData);
+    if (!userId) {
+      return res.status(StatusCodes.BAD_REQUEST).json({ message: "User ID not found" });
+    }
+    // Regular user only sees their own applications
+    const filter = role !== "admin" ? { owner: userId } : {};
+    const applicationsWithOpenShiftData = await fetchApplicationsWithDeployments(filter);
+    res.status(StatusCodes.OK).json(applicationsWithOpenShiftData);
   } catch (error) {
     next(error);
   }
@@ -132,7 +140,7 @@ export const getApplication = async (req, res, next) => {
   try {
     const application = await Application.findOne({ slug }).populate("deployments");
     if (!application) {
-      return next(error(404, "Application not found"));
+      return next(error(StatusCodes.NOT_FOUND, "Application not found"));
     }
 
     const updatedDeployments = await Promise.all(
@@ -145,7 +153,7 @@ export const getApplication = async (req, res, next) => {
         return transformedDeployment;
       })
     );
-    res.status(200).json({ ...application.toObject(), deployments: updatedDeployments });
+    res.status(StatusCodes.OK).json({ ...application.toObject(), deployments: updatedDeployments });
   } catch (error) {
     next(error);
   }
@@ -163,12 +171,18 @@ export const getApplication = async (req, res, next) => {
  */
 export const deleteApplication = async (req, res, next) => {
   const { slug } = req.params;
+  const { userId } = req.user;
 
   logger.debug("Deleting application:", slug);
   try {
     const application = await Application.findById(slug);
     if (!application) {
-      return next(error(404, "Application not found"));
+      return next(error(StatusCodes.NOT_FOUND, "Application not found"));
+    }
+
+    // Check ownership (or admin)
+    if (application.owner !== userId && req.user.role !== "admin") {
+      return next(error(StatusCodes.FORBIDDEN, "You are not allowed to delete this application"));
     }
 
     // Fetch OpenShift deployments to confirm their existence
@@ -191,7 +205,7 @@ export const deleteApplication = async (req, res, next) => {
     // Remove associated deployments from MongoDB
     await Deployment.deleteMany({ applicationId: application._id });
 
-    res.status(204).send();
+    res.status(StatusCodes.NO_CONTENT).send();
   } catch (error) {
     next(error);
   }
@@ -210,12 +224,18 @@ export const deleteApplication = async (req, res, next) => {
 export const updateApplication = validateUpdateApplication.concat(async (req, res, next) => {
   const { slug } = req.params;
   const { name, description } = req.body;
+  const { userId } = req.user;
 
   logger.debug("Updating application:", { slug, name, description });
   try {
     const application = await Application.findOne({ slug });
     if (!application) {
-      return next(error(400, "Application not found"));
+      return next(error(StatusCodes.BAD_REQUEST, "Application not found"));
+    }
+
+    // Check ownership (or admin)
+    if (application.owner !== userId && req.user.role !== "admin") {
+      return next(error(StatusCodes.FORBIDDEN, "You are not allowed to update this application"));
     }
 
     let isSlugChanged = false;
@@ -233,7 +253,7 @@ export const updateApplication = validateUpdateApplication.concat(async (req, re
     }
 
     const updatedApplication = await application.save();
-    res.status(200).json(updatedApplication);
+    res.status(StatusCodes.OK).json(updatedApplication);
   } catch (error) {
     next(error);
   }
@@ -256,7 +276,7 @@ export const getDeploymentsForApplication = async (req, res, next) => {
   try {
     const application = await Application.findOne({ slug });
     if (!application) {
-      return next(error(400, "Application not found"));
+      return next(error(StatusCodes.BAD_REQUEST, "Application not found"));
     }
 
     // Fetch deployments from MongoDB
@@ -266,7 +286,7 @@ export const getDeploymentsForApplication = async (req, res, next) => {
     const combinedDeployments = await Promise.all(
       deployments.map(async (deployment) => fetchAndUpdateDeployment(deployment))
     );
-    res.status(200).json(combinedDeployments);
+    res.status(StatusCodes.OK).json(combinedDeployments);
   } catch (error) {
     next(error);
   }

@@ -1,4 +1,5 @@
 import express from "express";
+import authRoutes from "./routes/authRoutes.js";
 import applicationRoutes from "./routes/applicationRoutes.js";
 import deploymentRoutes from "./routes/deploymentRoutes.js";
 import errorHandler from "./middlewares/errorHandler.js";
@@ -17,10 +18,13 @@ app.get("/", (req, res) => {
   res.json("It works!");
 });
 
+// Use auth routes for handling requests related to authentication
+app.use("/api/auth", authRoutes);
+
 // Use application routes for handling requests related to applications
 app.use("/api/applications", applicationRoutes);
 
-// Use nested routing for deployments
+// Use deployment routes for handling requests related to deployments
 app.use("/api/deployments", deploymentRoutes); 
 
 // Connect to MongoDB

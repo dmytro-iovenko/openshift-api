@@ -8,9 +8,9 @@ import { fetchAndUpdateDeploymentById } from "./deploymentUtils.js";
  *
  * @returns {Promise<Array>} - An array of applications with updated deployment details.
  */
-export const fetchApplicationsWithDeployments = async () => {
+export const fetchApplicationsWithDeployments = async (filter = {}) => {
   try {
-    const applications = await Application.find().populate("deployments");
+    const applications = await Application.find(filter).populate("deployments");
     const updatedApplications = await Promise.all(
       applications.map(async (app) => {
         const updatedDeployments = await Promise.all(app.deployments.map(fetchAndUpdateDeploymentById));

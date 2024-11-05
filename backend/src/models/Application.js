@@ -11,6 +11,7 @@ import { v4 as uuidv4 } from "uuid";
  * @property {String} description - The description of the application.
  * @property {String} image - The Docker image used for deployment. This field is required.
  * @property {String} deployments - An array of Deployment IDs.
+ * @property {String} owner - The ID of the user who owns the application. This field is required.
  * @property {Date} createdAt - The timestamp when the application was created.
  * @property {Date} updatedAt - The timestamp when the application was last updated.
  */
@@ -21,6 +22,7 @@ const ApplicationSchema = new mongoose.Schema(
     description: { type: String },
     image: { type: String, required: true },
     deployments: [{ type: mongoose.Schema.Types.ObjectId, ref: "Deployment" }],
+    owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   },
   { timestamps: true }
 );

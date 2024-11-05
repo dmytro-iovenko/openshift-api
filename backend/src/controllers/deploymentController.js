@@ -18,6 +18,7 @@ import error from "../utils/errorUtils.js";
 import logger from "../utils/logger.js";
 import schema from "../schemas/deploymentSchema.js";
 import { validationResult, body } from "express-validator";
+import { StatusCodes } from "http-status-codes";
 
 const ajv = new Ajv();
 const validate = ajv.compile(schema);
@@ -37,6 +38,26 @@ const validateDeploymentFromYaml = [
   body("applicationId").notEmpty().withMessage("Application ID is required."),
 ];
 
+// Middleware to check if the user owns the application
+export const checkDeploymentOwnership = (req, res, next) => {
+  const { applicationId } = req.body;
+
+  Application.findById(applicationId)
+    .then((application) => {
+      if (!application) {
+        return next(error(StatusCodes.NOT_FOUND, "Application not found"));
+      }
+
+      // If the user is not the owner or admin
+      if (req.user.role === "user" && String(application.owner) !== String(req.user.userId)) {
+        return next(error(StatusCodes.FORBIDDEN, "You are not the owner of this application"));
+      }
+
+      next();
+    })
+    .catch(next);
+};
+
 /**
  * Creates a new deployment for a specific application.
  *
@@ -54,6 +75,7 @@ export const createDeployment = validateCreateDeployment.concat(async (req, res,
     "Creating deployment:" +
       JSON.stringify({
         applicationId,
+        owner: req.user.userId,
         name,
         image,
         replicas,
@@ -69,13 +91,13 @@ export const createDeployment = validateCreateDeployment.concat(async (req, res,
     // Validate input
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return next(error(400, "Validation errors: " + JSON.stringify(errors.array())));
+      return next(error(StatusCodes.BAD_REQUEST, "Validation errors: " + JSON.stringify(errors.array())));
     }
 
     // Verify that the application exists
     const application = await Application.findById(applicationId);
     if (!application) {
-      return next(error(404, "Application not found"));
+      return next(error(StatusCodes.NOT_FOUND, "Application not found"));
     }
 
     const slug = await generateBaseSlug(name);
@@ -90,12 +112,13 @@ export const createDeployment = validateCreateDeployment.concat(async (req, res,
       envVars,
       strategy,
       maxUnavailable,
-      maxSurge
+      maxSurge,
     });
     const deployment = new Deployment({
       applicationId,
       name: deploymentData.metadata.name,
       image,
+      owner: req.user.userId,
       replicas,
       strategy,
       // maxUnavailable,
@@ -117,7 +140,7 @@ export const createDeployment = validateCreateDeployment.concat(async (req, res,
       applicationId: application._id,
     };
 
-    res.status(201).json(transformedDeployment);
+    res.status(StatusCodes.CREATED).json(transformedDeployment);
   } catch (err) {
     next(err);
   }
@@ -136,10 +159,10 @@ export const createDeployment = validateCreateDeployment.concat(async (req, res,
 export const createDeploymentFromYaml = validateDeploymentFromYaml.concat(async (req, res, next) => {
   const { yamlDefinition, applicationId } = req.body;
   if (!applicationId) {
-    return next(error(400, "Application ID is required"));
+    return next(error(StatusCodes.BAD_REQUEST, "Application ID is required"));
   }
   if (!yamlDefinition) {
-    return next(error(400, "YAML definition is required"));
+    return next(error(StatusCodes.BAD_REQUEST, "YAML definition is required"));
   }
 
   logger.debug("Creating deployment from YAML:", { yamlDefinition });
@@ -149,7 +172,7 @@ export const createDeploymentFromYaml = validateDeploymentFromYaml.concat(async 
     const deploymentConfig = yaml.load(yamlDefinition);
     const valid = validate(deploymentConfig);
     if (!valid) {
-      return next(error(400, "Invalid YAML structure: " + JSON.stringify(validate.errors)));
+      return next(error(StatusCodes.BAD_REQUEST, "Invalid YAML structure: " + JSON.stringify(validate.errors)));
     }
 
     // Create deployment in OpenShift
@@ -159,13 +182,14 @@ export const createDeploymentFromYaml = validateDeploymentFromYaml.concat(async 
       applicationId,
       name: deploymentData.metadata.name,
       image: deploymentConfig.spec.template.spec.containers[0].image,
+      owner: req.user.userId,
     });
 
     const savedDeployment = await deployment.save();
-    res.status(201).json(savedDeployment);
+    res.status(StatusCodes.CREATED).json(savedDeployment);
   } catch (err) {
     if (err instanceof yaml.YAMLException) {
-      return next(error(400, "Invalid YAML format: " + err.message));
+      return next(error(StatusCodes.BAD_REQUEST, "Invalid YAML format: " + err.message));
     }
     next(err);
   }
@@ -182,10 +206,16 @@ export const createDeploymentFromYaml = validateDeploymentFromYaml.concat(async 
  * @returns {Promise<void>} - Responds with a list of deployments.
  */
 export const getDeployments = async (req, res, next) => {
-  logger.debug("Retrieving all deployments.");
+  const { userId, role } = req.user;
 
+  logger.debug("Retrieving all deployments.");
   try {
-    const deployments = await Deployment.find().populate("applicationId");
+    if (!userId) {
+      return res.status(StatusCodes.BAD_REQUEST).json({ message: "User ID not found" });
+    }
+    // Regular user only sees their own applications
+    const filter = role !== "admin" ? { owner: userId } : {};
+    const deployments = await Deployment.find(filter).populate("applicationId");
 
     // Transform the deployments to include application details in a separate field
     const transformedDeployments = deployments.map((deployment) => ({
@@ -194,7 +224,7 @@ export const getDeployments = async (req, res, next) => {
       applicationId: deployment.applicationId._id,
     }));
 
-    res.status(200).json(transformedDeployments);
+    res.status(StatusCodes.OK).json(transformedDeployments);
   } catch (err) {
     next(err);
   }
@@ -212,16 +242,22 @@ export const getDeployments = async (req, res, next) => {
  */
 export const getDeployment = async (req, res, next) => {
   const { deploymentId } = req.params;
+  const { userId } = req.user;
 
   logger.debug("Retrieving deployment details:", { deploymentId });
 
   try {
     const deployment = await Deployment.findById(deploymentId).populate("applicationId");
     if (!deployment) {
-      return next(error(404, "Deployment not found"));
+      return next(error(StatusCodes.NOT_FOUND, "Deployment not found"));
     }
-    const deploymentData = await fetchAndUpdateDeployment(deployment, true);
 
+    // Check if the logged-in user is the owner or an admin
+    if (req.user.role !== "admin" && String(deployment.owner._id) !== String(userId)) {
+      return res.status(StatusCodes.FORBIDDEN).json({ message: "You are not authorized to access this deployment" });
+    }
+
+    const deploymentData = await fetchAndUpdateDeployment(deployment, true);
     // Transform the deployments to include application details in a separate field
     const transformedDeployment = {
       ...deploymentData,
@@ -229,7 +265,7 @@ export const getDeployment = async (req, res, next) => {
       applicationId: deploymentData.applicationId._id,
     };
 
-    res.status(200).json(transformedDeployment);
+    res.status(StatusCodes.OK).json(transformedDeployment);
   } catch (err) {
     next(err);
   }
@@ -247,6 +283,8 @@ export const getDeployment = async (req, res, next) => {
  */
 export const updateDeployment = validateUpdateDeployment.concat(async (req, res, next) => {
   const { deploymentId } = req.params;
+  const { userId } = req.user;
+
   // const { name, image } = req.body;
   // const { name, image, replicas, paused, envVars, strategy, maxUnavailable, maxSurge } = req.body;
   const updatedData = req.body;
@@ -257,12 +295,17 @@ export const updateDeployment = validateUpdateDeployment.concat(async (req, res,
     // Validate input
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return next(error(400, "Validation errors: " + JSON.stringify(errors.array())));
+      return next(error(StatusCodes.BAD_REQUEST, "Validation errors: " + JSON.stringify(errors.array())));
     }
 
     const deployment = await Deployment.findById(deploymentId).populate("applicationId");
     if (!deployment) {
-      return next(error(404, "Deployment not found"));
+      return next(error(StatusCodes.NOT_FOUND, "Deployment not found"));
+    }
+
+    // Check if the user has access to update this deployment
+    if (req.user.role !== "admin" && String(deployment.owner._id) !== String(userId)) {
+      return next(error(StatusCodes.FORBIDDEN, "You are not authorized to update this deployment"));
     }
 
     // const deploymentData = await fetchAndUpdateDeployment(deployment, true);
@@ -313,7 +356,7 @@ export const updateDeployment = validateUpdateDeployment.concat(async (req, res,
       applicationId: deployment.applicationId._id,
     };
 
-    res.status(200).json(transformedDeployment);
+    res.status(StatusCodes.OK).json(transformedDeployment);
   } catch (err) {
     next(err);
   }
@@ -331,13 +374,19 @@ export const updateDeployment = validateUpdateDeployment.concat(async (req, res,
  */
 export const deleteDeployment = async (req, res, next) => {
   const { deploymentId } = req.params;
+  const { userId } = req.user;
 
   logger.debug("Deleting deployment:", { deploymentId });
 
   try {
     const deployment = await Deployment.findById(deploymentId);
     if (!deployment) {
-      return next(error(404, "Deployment not found"));
+      return next(error(StatusCodes.NOT_FOUND, "Deployment not found"));
+    }
+
+    // Check if the user has access to delete this deployment
+    if (req.user.role !== "admin" && String(deployment.owner._id) !== String(userId)) {
+      return next(error(StatusCodes.FORBIDDEN, "You are not authorized to delete this deployment"));
     }
 
     // Delete the deployment from OpenShift
@@ -353,7 +402,7 @@ export const deleteDeployment = async (req, res, next) => {
       await application.save();
     }
 
-    res.status(204).send();
+    res.status(StatusCodes.NO_CONTENT).send();
   } catch (err) {
     next(err);
   }
@@ -378,13 +427,13 @@ export const scaleDeployment = async (req, res, next) => {
   try {
     const deployment = await Deployment.findById(deploymentId);
     if (!deployment) {
-      return next(error(404, "Deployment not found"));
+      return next(error(StatusCodes.NOT_FOUND, "Deployment not found"));
     }
 
     const updatedDeploymentData = await scaleOpenshiftDeployment(deployment.name, replicas);
     await updateDeploymentStatus(deployment, updatedDeploymentData);
 
-    res.status(200).json(deployment);
+    res.status(StatusCodes.OK).json(deployment);
   } catch (err) {
     next(err);
   }
@@ -408,11 +457,11 @@ export const getDeploymentHistory = async (req, res, next) => {
   try {
     const deployment = await Deployment.findById(deploymentId);
     if (!deployment) {
-      return next(error(404, "Deployment not found"));
+      return next(error(StatusCodes.NOT_FOUND, "Deployment not found"));
     }
 
     const history = await getOpenshiftDeploymentHistory(deployment.name);
-    res.status(200).json(history);
+    res.status(StatusCodes.OK).json(history);
   } catch (err) {
     next(err);
   }
