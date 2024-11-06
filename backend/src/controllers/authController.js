@@ -25,13 +25,14 @@ export const signUp = [
   // Apply validation middleware
   (req, res, next) => {
     const errors = validationResult(req);
+    console.log("Request body:", errors);
     if (!errors.isEmpty()) {
       return res.status(StatusCodes.BAD_REQUEST).json({ errors: errors.array() });
     }
     next();
   },
   async (req, res, next) => {
-    const { username, email, password } = req.body;
+    const { name, email, password } = req.body;
     try {
       // Check if user already exists
       const existingUser = await User.findOne({ email });
@@ -39,14 +40,11 @@ export const signUp = [
         return res.status(StatusCodes.BAD_REQUEST).json({ message: "Email already in use" });
       }
 
-      // Hash password before saving
-      const hashedPassword = await bcrypt.hash(password, 10);
-
       // Create new user
       const newUser = new User({
-        username,
+        name,
         email,
-        password: hashedPassword,
+        password,
         role: "user",
       });
 
@@ -57,6 +55,11 @@ export const signUp = [
 
       res.status(StatusCodes.CREATED).json({
         message: "User registered successfully",
+        user: {
+          name: newUser.name,
+          email: newUser.email,
+          role: newUser.role,
+        },
         token,
       });
     } catch (err) {
@@ -88,18 +91,8 @@ export const login = [
       }
 
       // Log user object for debugging
-      console.log('User from DB:', user);
-
-      // Compare passwords
-      console.log('Received password:', password); // Log received password
-      console.log('Stored hash:', user.password); // Log stored hashed password
-
-      const hashedPassword = await bcrypt.hash(password, 10);
-      console.log('hashedPassword:', hashedPassword); // Log result of the comparison
-
+      console.log("User from DB:", user);
       const isMatch = await bcrypt.compare(password, user.password);
-      console.log('Password match result:', isMatch); // Log result of the comparison
-
 
       // Compare passwords
       if (!isMatch) {
@@ -111,6 +104,11 @@ export const login = [
 
       res.status(StatusCodes.OK).json({
         message: "Login successful",
+        user: {
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        },
         token, // Send token back to the client
       });
     } catch (err) {

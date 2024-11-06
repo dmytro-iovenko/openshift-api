@@ -47,7 +47,7 @@ const ApplicationStatusChart: React.FC<ApplicationPieChartProps> = ({ deployment
   }
 
   return (
-    <Box sx={{ minWidth: "50px", minHeight: "50px", height: "50px", position: "relative" }}>
+    <Box sx={{ minWidth: "50px", minHeight: "50px", height: "50px", position: "relative", ml: "60px" }}>
       <Box
         sx={{
           display: "flex",

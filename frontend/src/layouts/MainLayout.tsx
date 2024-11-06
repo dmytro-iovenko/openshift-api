@@ -1,5 +1,7 @@
 import { DashboardLayout } from "@toolpad/core";
 import { Outlet } from "react-router-dom";
+import SidebarAvatar from "../components/SidebarAvatar";
+import ToolbarButtons from "../components/ToolbarButtons";
 
 /**
  * MainLayout component to wrap the main application content.
@@ -7,7 +9,7 @@ import { Outlet } from "react-router-dom";
  */
 export default function MainLayout() {
   return (
-    <DashboardLayout>
+    <DashboardLayout slots={{ toolbarActions: ToolbarButtons, sidebarFooter: SidebarAvatar }}>
       <Outlet />
     </DashboardLayout>
   );

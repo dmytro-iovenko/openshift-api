@@ -24,21 +24,7 @@ import { Application } from "../../types/Application";
 import ApplicationStatusChart from "./ApplicationStatusChart";
 import { LiaCubeSolid, LiaCubesSolid } from "react-icons/lia";
 import { TbRouteSquare2 } from "react-icons/tb";
-import stringHash from "string-hash";
-import tinycolor from "tinycolor2";
-
-/**
- * Generates a color based on the application's name.
- *
- * @param {string} name - The name of the application.
- * @returns {string} - Hex color string.
- */
-const getColorFromName = (name: string): string => {
-  if (!name) return "#f5f5f6";
-  const hash = stringHash(name);
-  const hue = hash % 360;
-  return tinycolor({ h: hue, s: 70, l: 50 }).toHexString();
-};
+import { getColorFromName } from "../../helpers/colors";
 
 /**
  * Represents a card displaying application information and details.

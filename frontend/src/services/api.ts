@@ -5,12 +5,29 @@ import { Deployment } from "../types/Deployment";
 // Load environment variables
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
+export const apiClient = axios.create({
+  baseURL: API_BASE_URL,
+});
+
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 /**
  * Fetches the list of applications from the API.
  * @returns {Promise<Application[]>} A promise that resolves to an array of applications.
  */
 export const fetchApplications = async (): Promise<Application[]> => {
-  const response = await axios.get(`${API_BASE_URL}/api/applications`);
+  const response = await apiClient.get(`${API_BASE_URL}/api/applications`);
   return response.data;
 };
 
@@ -22,7 +39,7 @@ export const fetchApplications = async (): Promise<Application[]> => {
  * @returns {Promise<Application>} A promise that resolves to the created application.
  */
 export const createApplication = async (application: { name: string; image?: string }): Promise<Application> => {
-  const response = await axios.post(`${API_BASE_URL}/api/applications`, application);
+  const response = await apiClient.post(`${API_BASE_URL}/api/applications`, application);
   return response.data;
 };
 
@@ -32,7 +49,7 @@ export const createApplication = async (application: { name: string; image?: str
  * @returns {Promise<void>} A promise that resolves when the application is deleted.
  */
 export const deleteApplication = async (slug: string): Promise<void> => {
-  await axios.delete(`${API_BASE_URL}/api/applications/${slug}`);
+  await apiClient.delete(`${API_BASE_URL}/api/applications/${slug}`);
 };
 
 /**
@@ -47,7 +64,7 @@ export const updateApplication = async (
   newName: string,
   newDescription: string
 ): Promise<Application> => {
-  const response = await axios.patch(`${API_BASE_URL}/api/applications/${slug}`, {
+  const response = await apiClient.patch(`${API_BASE_URL}/api/applications/${slug}`, {
     name: newName,
     description: newDescription,
   });
@@ -60,7 +77,7 @@ export const updateApplication = async (
  * @returns {Promise<Application>} - The application object.
  */
 export const fetchApplicationBySlug = async (slug: string): Promise<Application> => {
-  const response = await axios.get(`${API_BASE_URL}/api/applications/${slug}`);
+  const response = await apiClient.get(`${API_BASE_URL}/api/applications/${slug}`);
   return response.data;
 };
 
@@ -69,7 +86,7 @@ export const fetchApplicationBySlug = async (slug: string): Promise<Application>
  * @returns {Promise<Deployment[]>} - The list of deployments.
  */
 export const fetchDeployments = async (): Promise<Deployment[]> => {
-  const response = await axios.get(`${API_BASE_URL}/api/deployments`);
+  const response = await apiClient.get(`${API_BASE_URL}/api/deployments`);
   return response.data;
 };
 
@@ -101,7 +118,7 @@ export const createDeployment = async (deployment: {
   maxSurge: string;
 }): Promise<Deployment> => {
   console.log("createDeployment", deployment);
-  const response = await axios.post(`${API_BASE_URL}/api/deployments`, deployment);
+  const response = await apiClient.post(`${API_BASE_URL}/api/deployments`, deployment);
   return response.data;
 };
 
@@ -116,7 +133,7 @@ export const createDeploymentFromYaml = async (yamlDeployment: {
   applicationId: string;
   yamlDefinition: string;
 }): Promise<Deployment> => {
-  const response = await axios.post(`${API_BASE_URL}/api/deployments/from-yaml`, yamlDeployment);
+  const response = await apiClient.post(`${API_BASE_URL}/api/deployments/from-yaml`, yamlDeployment);
   return response.data;
 };
 
@@ -126,7 +143,7 @@ export const createDeploymentFromYaml = async (yamlDeployment: {
  * @returns {Promise<Deployment>} - The deployment details.
  */
 export const fetchDeployment = async (deploymentId: string): Promise<Deployment> => {
-  const response = await axios.get(`${API_BASE_URL}/api/deployments/${deploymentId}`);
+  const response = await apiClient.get(`${API_BASE_URL}/api/deployments/${deploymentId}`);
   return response.data;
 };
 
@@ -142,7 +159,7 @@ export const updateDeployment = async (
   deploymentId: string,
   updates: { name?: string; image?: string }
 ): Promise<Deployment> => {
-  const response = await axios.patch(`${API_BASE_URL}/api/deployments/${deploymentId}`, updates);
+  const response = await apiClient.patch(`${API_BASE_URL}/api/deployments/${deploymentId}`, updates);
   return response.data;
 };
 
@@ -152,7 +169,7 @@ export const updateDeployment = async (
  * @returns {Promise<void>} - A promise that resolves when the deployment is deleted.
  */
 export const deleteDeployment = async (deploymentId: string): Promise<void> => {
-  await axios.delete(`${API_BASE_URL}/api/deployments/${deploymentId}`);
+  await apiClient.delete(`${API_BASE_URL}/api/deployments/${deploymentId}`);
 };
 
 /**
@@ -162,7 +179,7 @@ export const deleteDeployment = async (deploymentId: string): Promise<void> => {
  * @returns {Promise<Deployment>} - The scaled deployment.
  */
 export const scaleDeployment = async (deploymentId: string, replicas: number): Promise<Deployment> => {
-  const response = await axios.patch(`${API_BASE_URL}/api/deployments/${deploymentId}/scale`, { replicas });
+  const response = await apiClient.patch(`${API_BASE_URL}/api/deployments/${deploymentId}/scale`, { replicas });
   return response.data;
 };
 
@@ -172,7 +189,7 @@ export const scaleDeployment = async (deploymentId: string, replicas: number): P
  * @returns {Promise<any>} - The deployment history.
  */
 export const fetchDeploymentHistory = async (deploymentId: string): Promise<any> => {
-  const response = await axios.get(`${API_BASE_URL}/api/deployments/${deploymentId}/history`);
+  const response = await apiClient.get(`${API_BASE_URL}/api/deployments/${deploymentId}/history`);
   return response.data;
 };
 
@@ -183,6 +200,6 @@ export const fetchDeploymentHistory = async (deploymentId: string): Promise<any>
  * @returns {Promise<Deployment>} - The rolled back deployment.
  */
 export const rollbackDeployment = async (deploymentId: string, revision: number): Promise<Deployment> => {
-  const response = await axios.post(`${API_BASE_URL}/api/deployments/${deploymentId}/rollback`, { revision });
+  const response = await apiClient.post(`${API_BASE_URL}/api/deployments/${deploymentId}/rollback`, { revision });
   return response.data;
 };

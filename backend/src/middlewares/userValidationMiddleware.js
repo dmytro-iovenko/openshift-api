@@ -7,11 +7,11 @@ import User from "../models/User.js";
 
 // Sign-up validation rules
 export const validateUserSignup = [
-  body("username")
+  body("name")
     .notEmpty()
-    .withMessage("Username is required")
+    .withMessage("Name is required")
     .isLength({ min: 3 })
-    .withMessage("Username must be at least 3 characters long"),
+    .withMessage("Name must be at least 3 characters long"),
 
   body("email")
     .isEmail()

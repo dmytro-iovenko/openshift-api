@@ -7,6 +7,7 @@ import { type Navigation } from "@toolpad/core/AppProvider";
 import { IconButton, ThemeProvider } from "@mui/material";
 import { NotificationProvider } from "./context/NotificationContext";
 import theme from "./themes/theme";
+import { AuthProvider } from "./context/AuthContext";
 
 // Navigation structure
 const navigation: Navigation = [
@@ -32,11 +33,13 @@ const branding = {
 export default function App() {
   return (
     <ThemeProvider theme={theme("light")}>
-      <AppProvider navigation={navigation} branding={branding}>
-        <NotificationProvider>
-          <Outlet />
-        </NotificationProvider>
-      </AppProvider>
+      <AuthProvider>
+        <AppProvider navigation={navigation} branding={branding}>
+          <NotificationProvider>
+            <Outlet />
+          </NotificationProvider>
+        </AppProvider>
+      </AuthProvider>
     </ThemeProvider>
   );
 }

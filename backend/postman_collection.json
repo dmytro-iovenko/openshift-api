@@ -34,7 +34,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\"username\":\"{{username}}\",\"email\":\"{{email}}\",\"password\":\"{{password}}\"}"
+          "raw": "{\"name\":\"{{name}}\",\"email\":\"{{email}}\",\"password\":\"{{password}}\"}"
         },
         "url": {
           "raw": "{{baseUrl}}/auth/signup",
