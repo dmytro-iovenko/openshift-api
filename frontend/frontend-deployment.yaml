@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shifthub-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: shifthub-app
+  template:
+    metadata:
+      labels:
+        app: shifthub-app
+    spec:
+      containers:
+      - name: shifthub-app
+        image: docker.io/dmiov/shifthub-app:latest
+        ports:
+        - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: shifthub-app
+spec:
+  selector:
+    app: shifthub-app
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  type: ClusterIP
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: shifthub-app
+spec:
+  to:
+    kind: Service
+    name: shifthub-app
+  port:
+    targetPort: 8080

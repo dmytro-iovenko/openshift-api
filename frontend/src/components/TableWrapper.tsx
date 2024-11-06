@@ -18,8 +18,9 @@ import {
   InputLabel,
   OutlinedInput,
   InputAdornment,
-  Checkbox,
-  ListItemText,
+  // Checkbox,
+  // ListItemText,
+  Badge,
 } from "@mui/material";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import ClearIcon from "@mui/icons-material/Clear";
@@ -58,7 +59,7 @@ const TableWrapper: React.FC<TableWrapperProps> = ({
   const [hoveredColumn, setHoveredColumn] = useState<string | null>(null);
   const [selectedFilters, setSelectedFilters] = useState<{ [key: string]: string[] }>({});
   const [filterColumn, setFilterColumn] = useState<string | null>(null);
-  const [filterValues, setFilterValues] = useState<string[]>([]);
+  // const [filterValues, setFilterValues] = useState<string[]>([]);
 
   const handleRequestSort = (property: string) => {
     const isAsc = orderBy === property && order === "asc";
@@ -73,13 +74,13 @@ const TableWrapper: React.FC<TableWrapperProps> = ({
 
   const closeFilterMenu = () => setFilterMenuAnchor(null);
 
-  const handleFilterMenuClose = (values: string[]) => {
-    setSelectedFilters((prev) => ({
-      ...prev,
-      [filterColumn!]: values,
-    }));
-    closeFilterMenu();
-  };
+  // const handleFilterMenuClose = (values: string[]) => {
+  //   setSelectedFilters((prev) => ({
+  //     ...prev,
+  //     [filterColumn!]: values,
+  //   }));
+  //   closeFilterMenu();
+  // };
 
   const resetColumnFilter = () => {
     setSelectedFilters((prev) => {
@@ -191,7 +192,7 @@ const TableWrapper: React.FC<TableWrapperProps> = ({
                         onClick={() => handleRequestSort(column.id)}>
                         {column.label}
                       </TableSortLabel>
-                      {/* <Box sx={{ position: "relative" }}>
+                      <Box sx={{ position: "relative" }}>
                         <IconButton
                           size="small"
                           onClick={(event) => handleFilterMenuClick(event, column.id)}
@@ -216,7 +217,7 @@ const TableWrapper: React.FC<TableWrapperProps> = ({
                             }}
                           />
                         )}
-                      </Box> */}
+                      </Box>
                     </Stack>
                   ) : (
                     column.label
@@ -282,12 +283,12 @@ const TableWrapper: React.FC<TableWrapperProps> = ({
                 </IconButton>
               </InputAdornment>
             }>
-            {filterValues.map((value) => (
+            {/* {filterValues.map((value) => (
               <MenuItem key={value} value={value}>
                 <Checkbox checked={selectedFilters[filterColumn!]?.includes(value)} />
                 <ListItemText primary={value} />
               </MenuItem>
-            ))}
+            ))} */}
           </Select>
         </FormControl>{" "}
       </Menu>
