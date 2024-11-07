@@ -73,23 +73,23 @@ export const createApplication = validateApplication.concat(async (req, res, nex
     const savedApplication = await application.save();
 
     // Create deployment in OpenShift and link it to the application
-    const slug = await generateBaseSlug(savedApplication.name);
-    const uniqueDeploymentName = await generateUniqueDeploymentName(slug);
-    const deployment = await createOpenshiftDeployment(uniqueDeploymentName, image);
-    const deploymentDoc = new Deployment({
-      applicationId: savedApplication._id,
-      name: deployment.metadata.name,
-      image,
-    });
-    await deploymentDoc.save();
+    // const slug = await generateBaseSlug(savedApplication.name);
+    // const uniqueDeploymentName = await generateUniqueDeploymentName(slug);
+    // const deployment = await createOpenshiftDeployment(uniqueDeploymentName, image);
+    // const deploymentDoc = new Deployment({
+    //   applicationId: savedApplication._id,
+    //   name: deployment.metadata.name,
+    //   image,
+    // });
+    // await deploymentDoc.save();
 
     // Update application with new deployment reference
-    savedApplication.deployments.push(deploymentDoc._id);
+    // savedApplication.deployments.push(deploymentDoc._id);
     await savedApplication.save();
 
     // Update deployment status and other fields using the returned deployment object
-    await updateDeploymentStatus(deploymentDoc, deployment);
-    await deploymentDoc.save();
+    // await updateDeploymentStatus(deploymentDoc, deployment);
+    // await deploymentDoc.save();
 
     res.status(StatusCodes.CREATED).json(savedApplication);
   } catch (error) {
@@ -179,9 +179,10 @@ export const deleteApplication = async (req, res, next) => {
     if (!application) {
       return next(error(StatusCodes.NOT_FOUND, "Application not found"));
     }
+    console.log(application.owner._id.toString (), userId, req.user.role);
 
     // Check ownership (or admin)
-    if (application.owner !== userId && req.user.role !== "admin") {
+    if (application.owner._id.toString() !== userId && req.user.role !== "admin") {
       return next(error(StatusCodes.FORBIDDEN, "You are not allowed to delete this application"));
     }
 
@@ -234,7 +235,7 @@ export const updateApplication = validateUpdateApplication.concat(async (req, re
     }
 
     // Check ownership (or admin)
-    if (application.owner !== userId && req.user.role !== "admin") {
+    if (application.owner._id.toString() !== userId && req.user.role !== "admin") {
       return next(error(StatusCodes.FORBIDDEN, "You are not allowed to update this application"));
     }
 

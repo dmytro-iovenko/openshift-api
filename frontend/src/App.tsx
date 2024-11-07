@@ -1,6 +1,6 @@
 import ViewInArOutlinedIcon from "@mui/icons-material/ViewInArOutlined";
 import AppsOutlinedIcon from "@mui/icons-material/AppsOutlined";
-import { LiaCubeSolid, LiaCubesSolid } from "react-icons/lia";
+import { /*LiaCubeSolid, */LiaCubesSolid } from "react-icons/lia";
 import { Outlet } from "react-router-dom";
 import { AppProvider } from "@toolpad/core/react-router-dom";
 import { type Navigation } from "@toolpad/core/AppProvider";
@@ -13,7 +13,7 @@ import { AuthProvider } from "./context/AuthContext";
 const navigation: Navigation = [
   { segment: "applications", title: "Applications", icon: <AppsOutlinedIcon />, pattern: "/applications/:slug" },
   { segment: "deployments", title: "Deployments", icon: <LiaCubesSolid size={24} />, pattern: "/deployments/:name" },
-  { segment: "pods", title: "Pods", icon: <LiaCubeSolid size={24} />, pattern: "/pods/:name" },
+  // { segment: "pods", title: "Pods", icon: <LiaCubeSolid size={24} />, pattern: "/pods/:name" },
 ];
 
 // Branding

@@ -100,10 +100,10 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({
     if (!formValues.name) {
       newErrors.name = "Please enter the application name.";
     }
-    // Validate image only if not in edit mode
-    if (!isEditMode && !formValues.image) {
-      newErrors.image = "Please provide a Docker image.";
-    }
+    // // Validate image only if not in edit mode
+    // if (!isEditMode && !formValues.image) {
+    //   newErrors.image = "Please provide a Docker image.";
+    // }
 
     // If there are errors, set the errors state
     if (Object.keys(newErrors).length > 0) {
@@ -116,7 +116,7 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({
     onSubmit({
       name: formValues.name,
       description: formValues.description,
-      image: isEditMode ? undefined : formValues.image,
+      // image: isEditMode ? undefined : formValues.image,
     }).then(() => {
       setHasUnsavedChanges(false);
       onClose(true);
@@ -183,7 +183,7 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({
         multiline
         rows={4}
       />
-      {!isEditMode && (
+      {/* {!isEditMode && (
         <TextField
           margin="dense"
           label="Docker Image"
@@ -194,7 +194,7 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({
           fullWidth
           required
         />
-      )}
+      )} */}
       <Box sx={{ mt: 1, display: "flex", justifyContent: "space-between" }}>
         <Button onClick={handleClose}>Cancel</Button>
         <Button onClick={handleSubmit} disabled={!hasUnsavedChanges}>

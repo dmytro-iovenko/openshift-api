@@ -20,7 +20,7 @@ const ApplicationSchema = new mongoose.Schema(
     name: { type: String, required: true },
     slug: { type: String, unique: true },
     description: { type: String },
-    image: { type: String, required: true },
+    image: { type: String },
     deployments: [{ type: mongoose.Schema.Types.ObjectId, ref: "Deployment" }],
     owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   },

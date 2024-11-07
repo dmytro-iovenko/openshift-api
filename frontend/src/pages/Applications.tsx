@@ -106,13 +106,14 @@ const Applications: React.FC<{}> = (): JSX.Element => {
 
   /**
    * Handles the confirmation dialog for deleting an application.
-   * @param {string} id - The ID of the application to delete.
+   * @param {string} slug - The ID of the application to delete.
    */
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (slug: string) => {
     try {
-      if (id) {
-        await deleteApplication(id);
-        setApplications(applications.filter((app) => app._id !== id));
+      console.log("Deleting application:", slug);
+      if (slug) {
+        await deleteApplication(slug);
+        setApplications(applications.filter((app) => app.slug !== slug));
         addNotification("Application deleted successfully!", "success");
       } else {
         addNotification("No application ID provided for deletion.", "error");
@@ -226,7 +227,7 @@ const Applications: React.FC<{}> = (): JSX.Element => {
                     <ApplicationCard
                       application={app}
                       onEdit={() => handleEdit(app)}
-                      onDelete={() => showDialog("confirmDelete", () => handleDelete(app._id))}
+                      onDelete={() => showDialog("confirmDelete", () => handleDelete(app.slug))}
                       onRefresh={() => refreshApplication(app.slug)}
                       isRefreshing={isRefreshing || isAppRefreshing === app.slug}
                     />
@@ -249,7 +250,7 @@ const Applications: React.FC<{}> = (): JSX.Element => {
                       ? {
                           name: currentApplication.name,
                           description: currentApplication.description,
-                          image: currentApplication.image,
+                          // image: currentApplication.image,
                           slug: currentApplication.slug,
                         }
                       : undefined
