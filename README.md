@@ -148,7 +148,7 @@ You can view a demo of the app in action here: [Demo Link](https://shifthub-app-
 
 ## Contributing
 
-We welcome contributions! To get started:
+Contributions are welcome! To get started:
 
 1. Fork the repository.
 2. Clone your fork and create a new branch for your feature/fix.
