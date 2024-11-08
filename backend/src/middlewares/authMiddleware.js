@@ -41,8 +41,9 @@ export const authorizeRole = (roles) => {
  */
 export const checkDeploymentOwnership = async (req, res, next) => {
   const { deploymentId } = req.params;
+  console.log(deploymentId);
   try {
-    const document = await Deployment.findOne({ deploymentId });
+    const document = await Deployment.findById(deploymentId);
     if (!document) {
       return res.status(StatusCodes.NOT_FOUND).json({ message: "Deployment not found" });
     }

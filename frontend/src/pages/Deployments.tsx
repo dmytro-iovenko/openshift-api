@@ -30,6 +30,7 @@ const Deployments: React.FC = (): JSX.Element => {
   const [currentDeployment, setCurrentDeployment] = useState<Deployment | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
   const [selectedAppId, setSelectedAppId] = useState("");
+  const [originalAppId, setOriginalAppId] = useState("");
 
   const [isRefreshing, setIsAllRefreshing] = useState<boolean>(false);
   const [isDeplRefreshing, setIsDeplRefreshing] = useState<string | null>(null);
@@ -67,6 +68,7 @@ const Deployments: React.FC = (): JSX.Element => {
         setOpenForm(false);
         setCurrentDeployment(null);
         setSelectedAppId("");
+        setOriginalAppId("");
       }
     };
     getDeployments();
@@ -131,6 +133,7 @@ const Deployments: React.FC = (): JSX.Element => {
    */
   const handleEdit = (deployment: Deployment) => {
     setSelectedAppId(deployment.application._id);
+    setOriginalAppId(deployment.application._id);
     setCurrentDeployment(deployment);
     setOpenForm(true);
   };
@@ -179,10 +182,11 @@ const Deployments: React.FC = (): JSX.Element => {
     setOpenForm(false);
     setCurrentDeployment(null);
     setSelectedAppId("");
+    setOriginalAppId("");
   };
 
   /**
-   * Refreshes all applications by fetching the latest data from the API.
+   * Refreshes all deployments by fetching the latest data from the API.
    * @returns {Promise<void>} A promise that resolves when the operation is complete.
    */
   const handleRefreshAll = async () => {
@@ -286,7 +290,10 @@ const Deployments: React.FC = (): JSX.Element => {
                   applications={applications}
                   selectedAppId={selectedAppId}
                   setSelectedAppId={setSelectedAppId}
+                  originalAppId={originalAppId}
+                  setOriginalAppId={setOriginalAppId}
                   isEditMode={!!currentDeployment}
+                  isAppSelectorLocked={false}
                   setHasUnsavedChanges={setHasUnsavedChanges}
                   hasUnsavedChanges={hasUnsavedChanges}
                   showDialog={showDialog}

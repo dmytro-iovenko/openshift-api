@@ -34,8 +34,8 @@ router.get("/generate-slugs", protect, authorizeRole(["admin"]), async (req, res
 router.post("/", protect, authorizeRole(["admin", "user"]), createApplication); // Create a new application
 router.get("/", protect, getApplications); // Retrieve all applications
 router.get("/:slug", protect, checkApplicationOwnership, getApplication); // Retrieve application by slug
-router.delete("/:slug", protect, authorizeRole(["admin"]), deleteApplication); // Delete application by slug
-router.patch("/:slug", protect, authorizeRole(["admin", "user"]), updateApplication); // Update application by slug
+router.delete("/:slug", protect, checkApplicationOwnership, deleteApplication); // Delete application by slug
+router.patch("/:slug", protect, checkApplicationOwnership, updateApplication); // Update application by slug
 router.get("/:slug/deployments", protect, getDeploymentsForApplication); // Retrieve application by slug
 
 export default router;

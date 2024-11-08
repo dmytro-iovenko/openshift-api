@@ -173,13 +173,13 @@ export const deleteApplication = async (req, res, next) => {
   const { slug } = req.params;
   const { userId } = req.user;
 
-  logger.debug("Deleting application:", slug);
+  logger.debug("Deleting application: " + slug);
   try {
-    const application = await Application.findById(slug);
+    const application = await Application.findOne({ slug });
     if (!application) {
       return next(error(StatusCodes.NOT_FOUND, "Application not found"));
     }
-    console.log(application.owner._id.toString (), userId, req.user.role);
+    console.log(application.owner._id.toString(), userId, req.user.role);
 
     // Check ownership (or admin)
     if (application.owner._id.toString() !== userId && req.user.role !== "admin") {
@@ -201,7 +201,7 @@ export const deleteApplication = async (req, res, next) => {
     );
 
     // Delete the application from MongoDB
-    await Application.findByIdAndDelete(slug);
+    await Application.findByIdAndDelete(application._id);
 
     // Remove associated deployments from MongoDB
     await Deployment.deleteMany({ applicationId: application._id });

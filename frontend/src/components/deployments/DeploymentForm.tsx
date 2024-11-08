@@ -18,6 +18,7 @@ import {
   Step,
   StepContent,
   IconButton,
+  InputAdornment,
 } from "@mui/material";
 
 /**
@@ -34,8 +35,8 @@ import {
  * @property {(hasUnsavedChanges: boolean) => void} setHasUnsavedChanges - Callback function to set the unsaved changes flag.
  */
 interface DeploymentFormProps {
-  open: boolean;
-  onClose: (forceClose?: boolean) => void;
+  open: boolean; // Flag to indicate if the form is open
+  onClose: (forceClose?: boolean) => void; // Function to close the form
   onSubmit: (
     data:
       | {
@@ -50,7 +51,7 @@ interface DeploymentFormProps {
           maxSurge: string;
         }
       | { appId: string; yaml: string }
-  ) => Promise<void>;
+  ) => Promise<void>; // Function to handle form submission
   initialData?: {
     name: string;
     image: string;
@@ -61,14 +62,17 @@ interface DeploymentFormProps {
     maxUnavailable: string;
     maxSurge: string;
     yaml: string;
-  };
+  }; // Initial data for the form when editing
   applications: { _id: string; name: string }[]; // List of applications with IDs and names
   selectedAppId: string; // Currently selected application ID
   setSelectedAppId: (id: string) => void; // Function to update selected application ID
-  isEditMode: boolean;
-  setHasUnsavedChanges: (hasUnsavedChanges: boolean) => void;
-  hasUnsavedChanges: boolean;
-  showDialog: (dialogType: string, confirmCallback: () => void) => void;
+  originalAppId: string; // Original application ID for the deployment,
+  setOriginalAppId: (id: string) => void; // Function to update the original application ID,
+  isEditMode: boolean; // Flag to indicate if the form is in edit mode
+  isAppSelectorLocked: boolean; // Flag to indicate if the application selector is locked
+  setHasUnsavedChanges: (hasUnsavedChanges: boolean) => void; // Function to set the unsaved changes flag
+  hasUnsavedChanges: boolean; // Flag indicating if there are unsaved changes in the form
+  showDialog: (dialogType: string, confirmCallback: () => void) => void; // Function to show a dialog
 }
 
 /**
@@ -85,7 +89,10 @@ const DeploymentForm: React.FC<DeploymentFormProps> = ({
   applications,
   selectedAppId,
   setSelectedAppId,
+  originalAppId,
+  setOriginalAppId,
   isEditMode,
+  isAppSelectorLocked,
   hasUnsavedChanges,
   setHasUnsavedChanges,
   showDialog,
@@ -135,6 +142,14 @@ const DeploymentForm: React.FC<DeploymentFormProps> = ({
       setHasUnsavedChanges(false);
     }
   }, [open]);
+
+  /**
+   * Handles the move click event and updates the originalAppId state.
+   */
+  const handleMoveClick = () => {
+    console.log(`Moving deployment to app ID: ${selectedAppId}`);
+    setOriginalAppId(selectedAppId);
+  };
 
   /**
    * Handles change events for form fields and marks as modified when any field changes
@@ -214,6 +229,10 @@ const DeploymentForm: React.FC<DeploymentFormProps> = ({
   const handleSubmit = async () => {
     const newErrors: any = {};
 
+    // Check if app selection is locked and the app ID has been changed
+    if (isAppSelectorLocked && selectedAppId !== originalAppId) {
+      newErrors.appId = "Application selection is locked. You cannot change the application.";
+    }
     // Validate required fields
     if (!selectedAppId) {
       newErrors.appId = "Please select an application.";
@@ -319,289 +338,352 @@ const DeploymentForm: React.FC<DeploymentFormProps> = ({
     "Configure Advanced Options",
   ];
 
+  const isWaitingForMove = isEditMode && selectedAppId !== originalAppId;
+
   return (
     <Box sx={{ p: 2 }}>
       <Typography variant="h6" gutterBottom>
         {isEditMode ? "Edit Deployment" : "Add Deployment"}
       </Typography>
-      <FormControl fullWidth margin="normal">
-        <InputLabel id="select-application">Select Application</InputLabel>
-        <Select
-          labelId="select-application"
-          id="select-application"
-          label="Select Application"
-          value={selectedAppId}
-          onChange={(e) => setSelectedAppId(e.target.value)}
-          error={!!errors.appId}>
-          {applications.map((app) => (
-            <MenuItem key={app._id} value={app._id}>
-              {app.name}
-            </MenuItem>
-          ))}
-        </Select>
-        {errors.appId && <Typography color="error">{errors.appId}</Typography>}
-      </FormControl>
-      <FormControlLabel
-        label="Use YAML Input"
-        control={
-          <Switch checked={formValues.isYamlMode} onChange={(e) => handleChange("isYamlMode", e.target.checked)} />
-        }
-      />
-      {formValues.isYamlMode ? (
-        <>
-          <TextField
-            label="YAML Configuration"
-            multiline
-            rows={5}
-            value={formValues.yaml}
-            onChange={(e) => handleChange("yaml", e.target.value)}
-            fullWidth
-            margin="normal"
-            error={!!errors.yaml}
-            helperText={errors.yaml}
-          />
-          <Box sx={{ mt: 2, display: "flex", justifyContent: "space-between" }}>
-            <Button onClick={() => handleClose()}>Cancel</Button>
-            <Button onClick={handleSubmit} disabled={!hasUnsavedChanges} variant="contained">
-              {initialData ? "Save" : "Create"}
-            </Button>
-          </Box>
-        </>
+      {isAppSelectorLocked ? (
+        <TextField
+          label="Application"
+          value={selectedAppId ? applications.find((app) => app._id === selectedAppId)?.name : ""}
+          disabled
+          fullWidth
+          margin="normal"
+        />
       ) : (
-        <>
-          <Stepper activeStep={activeStep} orientation="vertical">
-            {steps.map((label) => (
-              <Step key={label}>
-                <StepLabel>{label}</StepLabel>
-                {activeStep === 0 && (
-                  <StepContent>
-                    <TextField
-                      label="Deployment Name"
-                      value={formValues.name}
-                      onChange={(e) => handleChange("name", e.target.value)}
-                      fullWidth
-                      margin="normal"
-                      error={!!errors.name}
-                      helperText={errors.name ?? "Name must match RFC 1123 subdomain format"}
-                      required
-                    />
-                    <TextField
-                      label="Image Name"
-                      value={formValues.image}
-                      onChange={(e) => handleChange("image", e.target.value)}
-                      fullWidth
-                      margin="normal"
-                      error={!!errors.image}
-                      helperText={errors.image ?? "Container image name"}
-                      required
-                    />
-                    <Button variant="contained" onClick={handleNext} sx={{ mt: 2 }}>
-                      Next
-                    </Button>
-                  </StepContent>
-                )}
-                {activeStep === 1 && (
-                  <StepContent>
-                    {/* Deployment Strategy Section */}
-                    <FormControl fullWidth margin="normal">
-                      <InputLabel id="strategy-type">Strategy Type</InputLabel>
-                      <Select
-                        labelId="strategy-type"
-                        id="strategy-type"
-                        label="Strategy Type"
-                        value={formValues.strategyType}
-                        onChange={(e) => handleChange("strategyType", e.target.value)}>
-                        <MenuItem value="RollingUpdate">Rolling Update</MenuItem>
-                        <MenuItem value="Recreate">Recreate</MenuItem>
-                      </Select>
-                      {formValues.strategyType === "RollingUpdate" ? (
-                        <Typography variant="caption" color="text.secondary" sx={{ mx: 2 }}>
-                          The rolling update strategy waits for pods to pass readiness checks before scaling down old
-                          components and scaling up new ones.
-                        </Typography>
-                      ) : (
-                        <Typography variant="caption" color="text.secondary" sx={{ mx: 2 }}>
-                          The recreate strategy follows basic rollout behavior.
-                        </Typography>
-                      )}
-                    </FormControl>
+        <FormControl fullWidth margin="normal">
+          <InputLabel id="select-application">Select Application</InputLabel>
+          <Select
+            labelId="select-application"
+            id="select-application"
+            label="Select Application"
+            value={selectedAppId}
+            onChange={(e) => {
+              if (!isAppSelectorLocked) {
+                setSelectedAppId(e.target.value);
+              }
+            }}
+            error={!!errors.appId}
+            endAdornment={
+              isWaitingForMove ? (
+                <InputAdornment position="start">
+                  <Button variant="text" color="primary" size="small" onClick={handleMoveClick}>
+                    Move
+                  </Button>
+                </InputAdornment>
+              ) : null
+            }
+            disabled={isAppSelectorLocked}>
+            {applications.map((app) => (
+              <MenuItem key={app._id} value={app._id}>
+                {app.name}
+              </MenuItem>
+            ))}
+          </Select>
+          {errors.appId ? (
+            <Typography variant="body2" color="error" sx={{ mx: 2 }}>
+              {errors.appId}
+            </Typography>
+          ) : (
+            <Typography variant="body2" color="text.secondary" sx={{ mx: 2 }}>
+              {isEditMode
+                ? "You can change the application to move this deployment to a different application"
+                : "Select an application to which you want to add the deployment"}
+            </Typography>
+          )}
+        </FormControl>
+      )}
+      {selectedAppId && (
+        <FormControlLabel
+          label="Use YAML Input"
+          control={
+            <Switch
+              checked={formValues.isYamlMode}
+              onChange={(e) => handleChange("isYamlMode", e.target.checked)}
+              disabled={isWaitingForMove}
+            />
+          }
+        />
+      )}
 
-                    {/* Conditionally render maxUnavailable and maxSurge fields */}
-                    {formValues.strategyType === "RollingUpdate" && (
-                      <>
-                        <TextField
-                          label="Maximum number of unavailable Pods"
-                          value={formValues.maxUnavailable}
-                          onChange={(e) => handleChange("maxUnavailable", e.target.value)}
-                          fullWidth
-                          margin="normal"
-                          required
-                          error={!!errors.maxUnavailable}
-                          helperText={
-                            errors.maxUnavailable ||
-                            "The maximum number of pods that can be unavailable during the rolling deployment."
-                          }
-                        />
-                        <TextField
-                          label="Maximum number of surge Pods"
-                          value={formValues.maxSurge}
-                          onChange={(e) => handleChange("maxSurge", e.target.value)}
-                          fullWidth
-                          margin="normal"
-                          required
-                          error={!!errors.maxSurge}
-                          helperText={
-                            errors.maxSurge ||
-                            "The maximum number of pods that can be scheduled above the original number of pods."
-                          }
-                        />
-                      </>
-                    )}
-                    <Button variant="contained" onClick={handleBack} sx={{ mt: 2 }}>
-                      Back
-                    </Button>
-                    <Button variant="contained" onClick={handleNext} sx={{ mt: 2, ml: 2 }}>
-                      Next
-                    </Button>
-                  </StepContent>
-                )}
-                {activeStep === 2 && (
-                  <StepContent>
-                    {/* Environment Variables Section */}
-                    {formValues.envVars.map((envVar, index, senVars) => (
-                      <Grid container spacing={2} key={index} alignItems="center" sx={{ mt: 1 }}>
-                        <Grid size={{ xs: 5 }}>
+      {selectedAppId &&
+        (formValues.isYamlMode ? (
+          <>
+            <TextField
+              label="YAML Configuration"
+              multiline
+              rows={5}
+              value={formValues.yaml}
+              onChange={(e) => handleChange("yaml", e.target.value)}
+              fullWidth
+              margin="normal"
+              error={!!errors.yaml}
+              helperText={errors.yaml}
+              disabled={isWaitingForMove}
+            />
+            <Box sx={{ mt: 2, display: "flex", justifyContent: "space-between" }}>
+              <Button onClick={() => handleClose()} disabled={isWaitingForMove}>
+                Cancel
+              </Button>
+              <Button onClick={handleSubmit} disabled={!hasUnsavedChanges || isWaitingForMove} variant="contained">
+                {initialData ? "Save" : "Create"}
+              </Button>
+            </Box>
+          </>
+        ) : (
+          <>
+            <Stepper activeStep={activeStep} orientation="vertical" sx={{ opacity: isWaitingForMove ? 0.38 : 1 }}>
+              {steps.map((label) => (
+                <Step key={label}>
+                  <StepLabel>{label}</StepLabel>
+                  {activeStep === 0 && (
+                    <StepContent>
+                      <TextField
+                        label="Deployment Name"
+                        value={formValues.name}
+                        onChange={(e) => handleChange("name", e.target.value)}
+                        fullWidth
+                        margin="normal"
+                        error={!!errors.name}
+                        helperText={errors.name ?? "Name must match RFC 1123 subdomain format"}
+                        required
+                        disabled={isWaitingForMove}
+                      />
+                      <TextField
+                        label="Image Name"
+                        value={formValues.image}
+                        onChange={(e) => handleChange("image", e.target.value)}
+                        fullWidth
+                        margin="normal"
+                        error={!!errors.image}
+                        helperText={errors.image ?? "Container image name"}
+                        required
+                        disabled={isWaitingForMove}
+                      />
+                      <Button variant="contained" onClick={handleNext} sx={{ mt: 2 }} disabled={isWaitingForMove}>
+                        Next
+                      </Button>
+                    </StepContent>
+                  )}
+                  {activeStep === 1 && (
+                    <StepContent>
+                      {/* Deployment Strategy Section */}
+                      <FormControl fullWidth margin="normal">
+                        <InputLabel id="strategy-type">Strategy Type</InputLabel>
+                        <Select
+                          labelId="strategy-type"
+                          id="strategy-type"
+                          label="Strategy Type"
+                          value={formValues.strategyType}
+                          onChange={(e) => handleChange("strategyType", e.target.value)}
+                          disabled={isWaitingForMove}>
+                          <MenuItem value="RollingUpdate">Rolling Update</MenuItem>
+                          <MenuItem value="Recreate">Recreate</MenuItem>
+                        </Select>
+                        {formValues.strategyType === "RollingUpdate" ? (
+                          <Typography variant="caption" color="text.secondary" sx={{ mx: 2 }}>
+                            The rolling update strategy waits for pods to pass readiness checks before scaling down old
+                            components and scaling up new ones.
+                          </Typography>
+                        ) : (
+                          <Typography variant="caption" color="text.secondary" sx={{ mx: 2 }}>
+                            The recreate strategy follows basic rollout behavior.
+                          </Typography>
+                        )}
+                      </FormControl>
+
+                      {/* Conditionally render maxUnavailable and maxSurge fields */}
+                      {formValues.strategyType === "RollingUpdate" && (
+                        <>
                           <TextField
-                            placeholder="Name"
-                            value={envVar.name}
-                            onChange={(e) => handleEnvVarChange(index, "name", e.target.value)}
+                            label="Maximum number of unavailable Pods"
+                            value={formValues.maxUnavailable}
+                            onChange={(e) => handleChange("maxUnavailable", e.target.value)}
                             fullWidth
+                            margin="normal"
+                            required
+                            error={!!errors.maxUnavailable}
+                            helperText={
+                              errors.maxUnavailable ||
+                              "The maximum number of pods that can be unavailable during the rolling deployment."
+                            }
+                            disabled={isWaitingForMove}
                           />
+                          <TextField
+                            label="Maximum number of surge Pods"
+                            value={formValues.maxSurge}
+                            onChange={(e) => handleChange("maxSurge", e.target.value)}
+                            fullWidth
+                            margin="normal"
+                            required
+                            error={!!errors.maxSurge}
+                            helperText={
+                              errors.maxSurge ||
+                              "The maximum number of pods that can be scheduled above the original number of pods."
+                            }
+                            disabled={isWaitingForMove}
+                          />
+                        </>
+                      )}
+                      <Button variant="contained" onClick={handleBack} sx={{ mt: 2 }} disabled={isWaitingForMove}>
+                        Back
+                      </Button>
+                      <Button
+                        variant="contained"
+                        onClick={handleNext}
+                        sx={{ mt: 2, ml: 2 }}
+                        disabled={isWaitingForMove}>
+                        Next
+                      </Button>
+                    </StepContent>
+                  )}
+                  {activeStep === 2 && (
+                    <StepContent>
+                      {/* Environment Variables Section */}
+                      {formValues.envVars.map((envVar, index, senVars) => (
+                        <Grid container spacing={2} key={index} alignItems="center" sx={{ mt: 1 }}>
+                          <Grid size={{ xs: 5 }}>
+                            <TextField
+                              placeholder="Name"
+                              value={envVar.name}
+                              onChange={(e) => handleEnvVarChange(index, "name", e.target.value)}
+                              fullWidth
+                              disabled={isWaitingForMove}
+                            />
+                          </Grid>
+                          <Grid size={{ xs: 5 }}>
+                            <TextField
+                              placeholder="Value"
+                              value={envVar.value}
+                              onChange={(e) => handleEnvVarChange(index, "value", e.target.value)}
+                              fullWidth
+                              disabled={isWaitingForMove}
+                            />
+                          </Grid>
+                          <Grid size={{ xs: 2 }}>
+                            <IconButton
+                              onClick={() => {
+                                if (senVars.length > 1) {
+                                  // Delete subsequent inputs
+                                  const newEnvVars = [...formValues.envVars];
+                                  newEnvVars.splice(index, 1);
+                                  setFormValues((prev) => ({ ...prev, envVars: newEnvVars }));
+                                } else {
+                                  // Reset the first input
+                                  setFormValues((prev) => ({
+                                    ...prev,
+                                    envVars: [{ name: "", value: "" }],
+                                  }));
+                                }
+                              }}
+                              disabled={isWaitingForMove || (senVars.length === 1 && !envVar.name && !envVar.value)}>
+                              <DeleteIcon />
+                            </IconButton>
+                          </Grid>
                         </Grid>
-                        <Grid size={{ xs: 5 }}>
-                          <TextField
-                            placeholder="Value"
-                            value={envVar.value}
-                            onChange={(e) => handleEnvVarChange(index, "value", e.target.value)}
-                            fullWidth
-                          />
+                      ))}
+                      <Grid container spacing={2} alignItems="center">
+                        <Grid size={{ xs: 10 }}>
+                          <Typography variant="caption" color="text.secondary">
+                            Add Environment Variable
+                          </Typography>
                         </Grid>
                         <Grid size={{ xs: 2 }}>
-                          <IconButton
-                            onClick={() => {
-                              if (senVars.length > 1) {
-                                // Delete subsequent inputs
-                                const newEnvVars = [...formValues.envVars];
-                                newEnvVars.splice(index, 1);
-                                setFormValues((prev) => ({ ...prev, envVars: newEnvVars }));
-                              } else {
-                                // Reset the first input
-                                setFormValues((prev) => ({
-                                  ...prev,
-                                  envVars: [{ name: "", value: "" }],
-                                }));
-                              }
-                            }}
-                            disabled={senVars.length === 1 && !envVar.name && !envVar.value}>
-                            <DeleteIcon />
+                          <IconButton color="primary" onClick={addEnvVar} disabled={isWaitingForMove}>
+                            <AddCircleIcon />
                           </IconButton>
                         </Grid>
                       </Grid>
-                    ))}
-                    <Grid container spacing={2} alignItems="center">
-                      <Grid size={{ xs: 10 }}>
-                        <Typography variant="caption" color="text.secondary">
-                          Add Environment Variable
+
+                      <Button variant="contained" onClick={handleBack} sx={{ mt: 2 }} disabled={isWaitingForMove}>
+                        Back
+                      </Button>
+                      <Button
+                        variant="contained"
+                        onClick={handleNext}
+                        sx={{ mt: 2, ml: 2 }}
+                        disabled={isWaitingForMove}>
+                        Next
+                      </Button>
+                    </StepContent>
+                  )}
+                  {activeStep === 3 && (
+                    <StepContent>
+                      <Box>
+                        <Typography variant="subtitle1">Scaling</Typography>
+                        <Typography variant="body2" color="textSecondary">
+                          Replicas are scaled manually based on CPU usage.
                         </Typography>
-                      </Grid>
-                      <Grid size={{ xs: 2 }}>
-                        <IconButton color="primary" onClick={addEnvVar}>
-                          <AddCircleIcon />
-                        </IconButton>
-                      </Grid>
-                    </Grid>
-
-                    <Button variant="contained" onClick={handleBack} sx={{ mt: 2 }}>
-                      Back
-                    </Button>
-                    <Button variant="contained" onClick={handleNext} sx={{ mt: 2, ml: 2 }}>
-                      Next
-                    </Button>
-                  </StepContent>
-                )}
-                {activeStep === 3 && (
-                  <StepContent>
-                    <Box>
-                      <Typography variant="subtitle1">Scaling</Typography>
-                      <Typography variant="body2" color="textSecondary">
-                        Replicas are scaled manually based on CPU usage.
-                      </Typography>
-                      <Grid container spacing={2} alignItems="center">
-                        <Grid>
-                          <Button variant="outlined" onClick={decrementReplicas}>
-                            -
-                          </Button>
-                        </Grid>
-                        <Grid>
-                          <TextField
-                            id="replicas-input"
-                            type="number"
-                            size="small"
-                            value={formValues.replicas}
-                            onChange={handleReplicasChange}
-                            slotProps={{
-                              htmlInput: {
-                                min: 0,
-                                style: {
-                                  textAlign: "center",
+                        <Grid container spacing={2} alignItems="center">
+                          <Grid>
+                            <Button variant="outlined" onClick={decrementReplicas}>
+                              -
+                            </Button>
+                          </Grid>
+                          <Grid>
+                            <TextField
+                              id="replicas-input"
+                              type="number"
+                              size="small"
+                              value={formValues.replicas}
+                              onChange={handleReplicasChange}
+                              slotProps={{
+                                htmlInput: {
+                                  min: 0,
+                                  style: {
+                                    textAlign: "center",
+                                  },
                                 },
-                              },
-                            }}
-                            sx={{
-                              width: 60,
-                              textAlign: "center",
-                              "& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button": {
-                                display: "none",
-                              },
-                              "& input[type=number]": {
-                                MozAppearance: "textfield",
-                                margin: 0,
-                              },
-                            }}
-                            required
-                          />
+                              }}
+                              sx={{
+                                width: 60,
+                                textAlign: "center",
+                                "& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button": {
+                                  display: "none",
+                                },
+                                "& input[type=number]": {
+                                  MozAppearance: "textfield",
+                                  margin: 0,
+                                },
+                              }}
+                              required
+                              disabled={isWaitingForMove}
+                            />
+                          </Grid>
+                          <Grid>
+                            <Button variant="outlined" onClick={incrementReplicas} disabled={isWaitingForMove}>
+                              +
+                            </Button>
+                          </Grid>
                         </Grid>
-                        <Grid>
-                          <Button variant="outlined" onClick={incrementReplicas}>
-                            +
-                          </Button>
-                        </Grid>
-                      </Grid>
-                      <Typography variant="body2" color="textSecondary">
-                        The number of instances of your Image.
-                      </Typography>
-                    </Box>
+                        <Typography variant="body2" color="textSecondary">
+                          The number of instances of your Image.
+                        </Typography>
+                      </Box>
 
-                    <Button variant="contained" onClick={handleBack} sx={{ mt: 2 }}>
-                      Back
-                    </Button>
-                    <Button
-                      variant="contained"
-                      onClick={handleSubmit}
-                      disabled={!hasUnsavedChanges}
-                      sx={{ mt: 2, ml: 2 }}>
-                      {isEditMode ? "Save" : "Create"}
-                    </Button>
-                  </StepContent>
-                )}
-              </Step>
-            ))}
-          </Stepper>
-          <Box sx={{ mt: 2, display: "flex", justifyContent: "space-between" }}>
-            <Button onClick={() => handleClose()}>Cancel</Button>
-          </Box>
-        </>
-      )}
+                      <Button variant="contained" onClick={handleBack} sx={{ mt: 2 }} disabled={isWaitingForMove}>
+                        Back
+                      </Button>
+                      <Button
+                        variant="contained"
+                        onClick={handleSubmit}
+                        disabled={!hasUnsavedChanges || isWaitingForMove}
+                        sx={{ mt: 2, ml: 2 }}>
+                        {isEditMode ? "Save" : "Create"}
+                      </Button>
+                    </StepContent>
+                  )}
+                </Step>
+              ))}
+            </Stepper>
+            {/* <Box sx={{ mt: 2, display: "flex", justifyContent: "space-between" }}>
+              <Button onClick={() => handleClose()}>Cancel</Button>
+            </Box> */}
+          </>
+        ))}
     </Box>
   );
 };
