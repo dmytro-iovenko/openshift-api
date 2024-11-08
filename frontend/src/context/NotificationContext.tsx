@@ -1,6 +1,5 @@
 import React, { createContext, useContext, ReactNode } from "react";
-import { SnackbarProvider, useSnackbar } from "notistack";
-import { Alert } from "@mui/material";
+import { useNotifications } from "@toolpad/core";
 
 interface NotificationContextType {
   addNotification: (message: string, severity: "success" | "error" | "warning" | "info") => void;
@@ -17,11 +16,11 @@ export const useNotification = (): NotificationContextType => {
 };
 
 export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const { enqueueSnackbar } = useSnackbar();
+  const notifications = useNotifications();
 
   const addNotification = (message: string, severity: "success" | "error" | "warning" | "info") => {
-    enqueueSnackbar(message, {
-      variant: severity,
+    notifications.show(message, {
+      severity: severity,
       autoHideDuration: 3000,
     });
   };
@@ -29,27 +28,8 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
   return <NotificationContext.Provider value={{ addNotification }}>{children}</NotificationContext.Provider>;
 };
 
-const CustomSnackbar = React.forwardRef(function CustomSnackbar(props: any, ref: React.Ref<HTMLDivElement>) {
-  const { message, variant } = props;
-  return (
-    <Alert ref={ref} severity={variant}>
-      {message}
-    </Alert>
-  );
-});
-
-// AppWrapper to include both Notification and Snackbar Providers
 const AppWrapper: React.FC<{ children: ReactNode }> = ({ children }) => (
-  <SnackbarProvider
-    maxSnack={5}
-    Components={{
-      success: CustomSnackbar,
-      error: CustomSnackbar,
-      warning: CustomSnackbar,
-      info: CustomSnackbar,
-    }}>
-    <NotificationProvider>{children}</NotificationProvider>
-  </SnackbarProvider>
+  <NotificationProvider>{children}</NotificationProvider>
 );
 
 export default AppWrapper;
