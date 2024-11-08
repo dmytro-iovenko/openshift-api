@@ -12,6 +12,8 @@ Built for both developers and operational teams, ShiftHub enables users to manag
 - **User Authentication**: Secure JWT-based login, account management, and password resets.
 - **Application Management**: Create, update, and delete applications; monitor deployment status and health.
 - **Deployment Management**: Create, scale, and roll back deployments (via forms or YAML uploads); monitor deployment health.
+- **SPA Routing**: Full support for client-side routing with direct URL navigation and page refresh handling, ensuring smooth user experience even when refreshing or navigating directly to specific paths.
+
 
 ### Backend
 - **API Integration**: RESTful API to manage apps and deployments, integrated with OpenShift for real-time deployment management.
@@ -26,47 +28,6 @@ The backend of **ShiftHub** integrates with OpenShift's API, allowing real-time 
 - **Create and Scale Deployments**: Add new application deployments or scale existing ones.
 - **Monitor Health**: Real-time health checks and replica counts.
 - **Rollback Deployments**: Revert to a previous deployment state when needed.
-
-## Deployment to OpenShift
-
-ShiftHub is designed for seamless deployment within an OpenShift cluster. The provided YAML files define deployment settings, services, and routes, allowing you to quickly deploy the app on OpenShift.
-
-- **Frontend Deployment YAML**: This file contains the configuration for the frontend application, including replicas, services, and routes.
-- **Backend Deployment YAML**: The backend YAML is designed to deploy the API service and connect it to OpenShift for real-time deployment management.
-
-Below is an example YAML for the frontend deployment:
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: shifthub-app
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: shifthub-app
-  template:
-    metadata:
-      labels:
-        app: shifthub-app
-    spec:
-      containers:
-      - name: shifthub-app
-        image: docker.io/dmiov/shifthub-app:latest
-        ports:
-        - containerPort: 8080
-```
-
-To deploy to OpenShift, follow these steps:
-1. **Create a project/namespace** (if not already done):
-    ```bash
-    oc new-project shifthub
-    ```
-2. **Apply the YAML files** to create the deployment, service, and route:
-    ```bash
-    oc apply -f frontend/frontend-deployment.yaml
-    oc apply -f backend/backend-deployment.yaml
-    ```
 
 ## Backend Setup
 
@@ -122,6 +83,47 @@ To deploy to OpenShift, follow these steps:
     npm run dev
     ```
     The frontend will run on `http://localhost:5173`.
+
+## Deployment to OpenShift
+
+ShiftHub is designed for seamless deployment within an OpenShift cluster. The provided YAML files define deployment settings, services, and routes, allowing you to quickly deploy the app on OpenShift.
+
+- **Frontend Deployment YAML**: This file contains the configuration for the frontend application, including replicas, services, and routes.
+- **Backend Deployment YAML**: The backend YAML is designed to deploy the API service and connect it to OpenShift for real-time deployment management.
+
+Below is an example YAML for the frontend deployment:
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shifthub-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: shifthub-app
+  template:
+    metadata:
+      labels:
+        app: shifthub-app
+    spec:
+      containers:
+      - name: shifthub-app
+        image: docker.io/dmiov/shifthub-app:latest
+        ports:
+        - containerPort: 8080
+```
+
+To deploy to OpenShift, follow these steps:
+1. **Create a project/namespace** (if not already done):
+    ```bash
+    oc new-project shifthub
+    ```
+2. **Apply the YAML files** to create the deployment, service, and route:
+    ```bash
+    oc apply -f frontend/frontend-deployment.yaml
+    oc apply -f backend/backend-deployment.yaml
+    ```
 
 ## Roadmap
 
