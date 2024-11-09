@@ -1,6 +1,6 @@
 import ViewInArOutlinedIcon from "@mui/icons-material/ViewInArOutlined";
 import AppsOutlinedIcon from "@mui/icons-material/AppsOutlined";
-import { /*LiaCubeSolid, */LiaCubesSolid } from "react-icons/lia";
+import { /*LiaCubeSolid, */ LiaCubesSolid } from "react-icons/lia";
 import { Outlet } from "react-router-dom";
 import { AppProvider } from "@toolpad/core/react-router-dom";
 import { type Navigation } from "@toolpad/core/AppProvider";

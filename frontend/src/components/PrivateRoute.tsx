@@ -3,13 +3,16 @@ import { Navigate, Outlet } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 
 const PrivateRoute: React.FC = () => {
-  const { token } = useContext(AuthContext)!;  // Get the token from context
+  const { user, token } = useContext(AuthContext)!;
 
-  if (!token) {
-    return <Navigate to="/login" />;  // Redirect to login if no token
+  console.log("User from Toolpad", user);
+  console.log("token from Toolpad", token);
+
+  if (!token || !user) {
+    return <Navigate to="/login" />;
   }
 
-  return <Outlet />;  // Render the protected content if token exists
+  return <Outlet />;
 };
 
 export default PrivateRoute;

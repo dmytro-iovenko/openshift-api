@@ -1,6 +1,13 @@
 import React, { createContext, useState, useEffect, ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
+// import { useSession } from "@toolpad/core";
+import { type Session, SessionContext } from "@toolpad/core/AppProvider";
 import { loginUser, signUpUser } from "../services/authService";
+import Loader from "../components/Loader";
+
+export interface UserSession extends Session {
+  token: string | null;
+}
 
 interface AuthContextType {
   user: any;
@@ -15,22 +22,21 @@ interface AuthContextType {
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<any>(() => {
-    if (localStorage.getItem("token")) {
-      return JSON.parse(localStorage.getItem("user")!) || null;
-    }
-  });
-  const [token, setToken] = useState<string | null>(localStorage.getItem("token"));
+  const [session, setSession] = useState<UserSession | null>(null);
+  const [isSessionLoaded, setIsSessionLoaded] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Set the user from localStorage if there's a token
-    if (token) {
-      const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
-      setUser(storedUser);
+    const token = localStorage.getItem("token");
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    console.log("Session", token, user);
+
+    if (token && user) {
+      setSession({ token, user });
     }
-  }, [token]);
+    setIsSessionLoaded(true);
+  }, []);
 
   const login = async (email: string, password: string) => {
     try {
@@ -38,9 +44,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const { token, user } = response.data;
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(user));
-      setToken(token);
-      setUser(user);
-      navigate("/applications"); // Redirect to applications page
+      setSession({ token, user });
+      navigate("/applications");
     } catch (error: any) {
       setAuthError(error?.response?.data?.message || "Login failed. Please try again.");
     }
@@ -49,15 +54,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const signup = async (email: string, password: string, name: string) => {
     try {
       const response = await signUpUser(email, password, name);
-      console.log("Response", response.data);
       const { token, user } = response.data;
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(user));
-      setToken(token);
-      setUser(user);
+      setSession({ token, user });
       navigate("/applications");
     } catch (error: any) {
-      console.log("Error", error);
       if (error?.response?.data?.errors) {
         setAuthError(
           error?.response?.data?.errors.map((err: any) => err.msg).join(", ") || "Signup failed. Please try again."
@@ -71,14 +73,26 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    setToken(null);
-    setUser(null);
+    setSession(null);
     navigate("/login");
   };
 
+  if (!isSessionLoaded) {
+    return <Loader />;
+  }
+
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, signup, error: authError, setError: setAuthError }}>
-      {children}
+    <AuthContext.Provider
+      value={{
+        user: session?.user,
+        token: session?.token!,
+        login,
+        logout,
+        signup,
+        error: authError,
+        setError: setAuthError,
+      }}>
+      <SessionContext.Provider value={session}>{children}</SessionContext.Provider>
     </AuthContext.Provider>
   );
 };
