@@ -1,6 +1,5 @@
 import mongoose from "mongoose";
-import slugify from "slugify";
-import { v4 as uuidv4 } from "uuid";
+import { generateUniqueSlug } from "../utils/applicationUtils.js";
 
 /**
  * Schema definition for the Application model.
@@ -22,7 +21,7 @@ const ApplicationSchema = new mongoose.Schema(
     description: { type: String },
     image: { type: String },
     deployments: [{ type: mongoose.Schema.Types.ObjectId, ref: "Deployment" }],
-    owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    owner: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   },
   { timestamps: true }
 );
@@ -32,12 +31,10 @@ const ApplicationSchema = new mongoose.Schema(
  */
 ApplicationSchema.pre("save", async function (next) {
   if (!this.slug) {
-    this.slug = slugify(this.name, { lower: true, strict: true });
-    // Ensure uniqueness
-    let originalSlug = this.slug;
-    while (await Application.exists({ slug: this.slug })) {
-      const uniqueSuffix = uuidv4().split("-")[0];
-      this.slug = `${originalSlug}-${uniqueSuffix}`;
+    try {
+      this.slug = await generateUniqueSlug(this.name);
+    } catch (error) {
+      next(error);
     }
   }
   next();

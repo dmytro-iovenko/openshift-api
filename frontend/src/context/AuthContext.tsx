@@ -44,14 +44,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (token) {
       isTokenExpired(token) && logout();
       const decoded: any = JWT.jwtDecode(token);
-      console.log("Decoded", decoded);
       setSession({ token, user: decoded.user });
     }
     setIsSessionLoaded(true);
   }, []);
 
   const login = async (email: string, password: string) => {
-    console.log("Login  ", email, password);
     try {
       const response = await loginUser(email, password);
       const { token } = response.data;

@@ -50,10 +50,13 @@ const getDeploymentConfig = (data) => {
         spec: {
           containers: [
             {
-              name: "container",
+              name: data.name,
               image: data.image,
               ports: [{ containerPort: 8080, protocol: "TCP" }],
-              env: data.envVars?.map((envVar) => ({ name: envVar.name, value: envVar.value })),
+              env:
+                data.envVars
+                  ?.filter((envVar) => envVar.value?.trim())
+                  .map((envVar) => ({ name: envVar.name, value: envVar.value })) || [],
             },
           ],
         },

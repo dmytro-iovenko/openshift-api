@@ -123,8 +123,8 @@ export const createDeployment = validateCreateDeployment.concat(async (req, res,
       owner: userId,
       replicas,
       strategy,
-      // maxUnavailable,
-      // maxSurge,
+      maxUnavailable,
+      maxSurge,
     });
     const savedDeployment = await deployment.save();
 

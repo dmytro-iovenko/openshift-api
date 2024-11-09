@@ -85,7 +85,6 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({
         updatedValues.description !== (initialData?.description ?? "") ||
         updatedValues.image !== (initialData?.image ?? "");
       setHasUnsavedChanges(modified);
-      console.log(updatedValues);
       return updatedValues;
     });
   };
@@ -144,7 +143,6 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({
    */
   const handleNavigate = () => {
     if (hasUnsavedChanges) {
-      console.log("Navigating to application details...");
       showDialog("confirmNavigate", () => {
         setHasUnsavedChanges(false);
         navigate(`/applications/${applicationSlug}`);

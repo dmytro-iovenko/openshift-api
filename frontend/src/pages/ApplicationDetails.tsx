@@ -44,7 +44,13 @@ const ApplicationDetails: React.FC<{}> = (): JSX.Element => {
 
   const [isRefreshing, setIsAllRefreshing] = useState<boolean>(false);
 
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState<{
+    generalSettings: boolean;
+    envVars: boolean;
+  }>({
+    generalSettings: false,
+    envVars: false,
+  });
 
   /**
    * Fetches application details and deployments when the component mounts.
@@ -57,16 +63,6 @@ const ApplicationDetails: React.FC<{}> = (): JSX.Element => {
         const deps = app.deployments;
 
         if (isMounted) {
-          // const uniqueAppIds = new Set<string>();
-          // const appsMap: Record<string, Application> = {};
-
-          // deps.forEach((dep) => {
-          //   if (!uniqueAppIds.has(dep.applicationId)) {
-          //     uniqueAppIds.add(dep.applicationId);
-          //     appsMap[dep.applicationId] = dep.application;
-          //   }
-          // });
-          console.log("ApplicationDetails", slug!, app);
           setApplication(app);
           setApplications([app]);
           setSelectedAppId(app._id);
@@ -77,10 +73,12 @@ const ApplicationDetails: React.FC<{}> = (): JSX.Element => {
         console.error("Failed to fetch application details:", error);
         addNotification("Failed to fetch application details.", "error");
       } finally {
-        setLoading(false);
-        setOpenForm(false);
-        setCurrentDeployment(null);
-        // setSelectedAppId("");
+        if (isMounted) {
+          setLoading(false);
+          setOpenForm(false);
+          setCurrentDeployment(null);
+          // setSelectedAppId("");
+        }
       }
     };
     getApplication();
@@ -135,7 +133,6 @@ const ApplicationDetails: React.FC<{}> = (): JSX.Element => {
           "yaml" in data
             ? await createDeploymentFromYaml({ applicationId: data.appId, yamlDefinition: data.yaml })
             : await createDeployment({ applicationId: data.appId, ...data });
-        console.log("New deployment:", newDeployment);
         setDeployments([...deployments, newDeployment]);
         addNotification("Deployment created successfully!", "success");
       }
@@ -150,9 +147,12 @@ const ApplicationDetails: React.FC<{}> = (): JSX.Element => {
    * @param {function} showDialog - Function to show a dialog.
    */
   const handleClose = (showDialog: (dialogType: string, confirmCallback: () => void) => void) => {
-    if (hasUnsavedChanges) {
+    if (hasUnsavedChanges.generalSettings || hasUnsavedChanges.envVars) {
       showDialog("confirmClose", () => {
-        setHasUnsavedChanges(false);
+        setHasUnsavedChanges({
+          generalSettings: false,
+          envVars: false,
+        });
         handleCloseForm(true);
       });
     } else {
@@ -165,7 +165,7 @@ const ApplicationDetails: React.FC<{}> = (): JSX.Element => {
    * @param {boolean} forceClose - Whether to force close the form without checking for unsaved changes.
    */
   const handleCloseForm = (forceClose: boolean = false) => {
-    if (hasUnsavedChanges && !forceClose) return;
+    if ((hasUnsavedChanges.generalSettings || hasUnsavedChanges.envVars) && !forceClose) return;
     setOpenForm(false);
     setCurrentDeployment(null);
     // setSelectedAppId();

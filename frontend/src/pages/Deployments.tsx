@@ -35,7 +35,13 @@ const Deployments: React.FC = (): JSX.Element => {
   const [isRefreshing, setIsAllRefreshing] = useState<boolean>(false);
   const [isDeplRefreshing, setIsDeplRefreshing] = useState<string | null>(null);
 
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState<{
+    generalSettings: boolean;
+    envVars: boolean;
+  }>({
+    generalSettings: false,
+    envVars: false,
+  });
 
   /**
    * Fetches deployments from the API when the component mounts.
@@ -64,11 +70,13 @@ const Deployments: React.FC = (): JSX.Element => {
         console.error("Failed to fetch deployments:", error);
         addNotification("Failed to fetch deployments.", "error");
       } finally {
-        setLoading(false);
-        setOpenForm(false);
-        setCurrentDeployment(null);
-        setSelectedAppId("");
-        setOriginalAppId("");
+        if (isMounted) {
+          setLoading(false);
+          setOpenForm(false);
+          setCurrentDeployment(null);
+          setSelectedAppId("");
+          setOriginalAppId("");
+        }
       }
     };
     getDeployments();
@@ -98,7 +106,6 @@ const Deployments: React.FC = (): JSX.Element => {
         }
       | { appId: string; yaml: string }
   ) => {
-    console.log("Form data:", data, currentDeployment);
     try {
       if (currentDeployment) {
         // Update existing deployment
@@ -117,7 +124,6 @@ const Deployments: React.FC = (): JSX.Element => {
           "yaml" in data
             ? await createDeploymentFromYaml({ applicationId: data.appId, yamlDefinition: data.yaml })
             : await createDeployment({ applicationId: data.appId, ...data });
-        console.log("New deployment:", newDeployment);
         setDeployments([...deployments, newDeployment]);
         addNotification("Deployment created successfully!", "success");
       }
@@ -163,9 +169,12 @@ const Deployments: React.FC = (): JSX.Element => {
    * @param {function} showDialog - Function to show a dialog.
    */
   const handleClose = (showDialog: (dialogType: string, confirmCallback: () => void) => void) => {
-    if (hasUnsavedChanges) {
+    if (hasUnsavedChanges.generalSettings || hasUnsavedChanges.envVars) {
       showDialog("confirmClose", () => {
-        setHasUnsavedChanges(false);
+        setHasUnsavedChanges({
+          generalSettings: false,
+          envVars: false,
+        });
         handleCloseForm(true);
       });
     } else {
@@ -178,7 +187,7 @@ const Deployments: React.FC = (): JSX.Element => {
    * @param {boolean} forceClose - Whether to force close the form without checking for unsaved changes.
    */
   const handleCloseForm = (forceClose: boolean = false) => {
-    if (hasUnsavedChanges && !forceClose) return;
+    if ((hasUnsavedChanges.generalSettings || hasUnsavedChanges.envVars) && !forceClose) return;
     setOpenForm(false);
     setCurrentDeployment(null);
     setSelectedAppId("");

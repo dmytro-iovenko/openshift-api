@@ -70,8 +70,17 @@ interface DeploymentFormProps {
   setOriginalAppId: (id: string) => void; // Function to update the original application ID,
   isEditMode: boolean; // Flag to indicate if the form is in edit mode
   isAppSelectorLocked: boolean; // Flag to indicate if the application selector is locked
-  setHasUnsavedChanges: (hasUnsavedChanges: boolean) => void; // Function to set the unsaved changes flag
-  hasUnsavedChanges: boolean; // Flag indicating if there are unsaved changes in the form
+  setHasUnsavedChanges: React.Dispatch<
+    React.SetStateAction<{
+      generalSettings: boolean;
+      envVars: boolean;
+    }>
+  >;
+  // Function to set the unsaved changes flag
+  hasUnsavedChanges: {
+    generalSettings: boolean;
+    envVars: boolean;
+  }; // Flag to indicate if there are unsaved changes in the form
   showDialog: (dialogType: string, confirmCallback: () => void) => void; // Function to show a dialog
 }
 
@@ -119,11 +128,11 @@ const DeploymentForm: React.FC<DeploymentFormProps> = ({
     yaml?: string;
     maxUnavailable?: string;
     maxSurge?: string;
+    envVars?: { [index: number]: { name?: string; value?: string } };
   }>({});
 
   useEffect(() => {
     if (open) {
-      console.log("initialData", initialData);
       if (initialData) {
         setFormValues({
           ...formValues,
@@ -139,7 +148,10 @@ const DeploymentForm: React.FC<DeploymentFormProps> = ({
         });
       }
       setErrors({});
-      setHasUnsavedChanges(false);
+      setHasUnsavedChanges({
+        generalSettings: false,
+        envVars: false,
+      });
     }
   }, [open]);
 
@@ -147,7 +159,6 @@ const DeploymentForm: React.FC<DeploymentFormProps> = ({
    * Handles the move click event and updates the originalAppId state.
    */
   const handleMoveClick = () => {
-    console.log(`Moving deployment to app ID: ${selectedAppId}`);
     setOriginalAppId(selectedAppId);
   };
 
@@ -157,19 +168,16 @@ const DeploymentForm: React.FC<DeploymentFormProps> = ({
   const handleChange = (field: keyof typeof formValues, value: string | boolean) => {
     setFormValues((prev) => {
       const updatedValues = { ...prev, [field]: value };
-      // console.log("handleChange:", field, value, initialData?.replicas, updatedValues.replicas, updatedValues.replicas != (initialData?.replicas ?? 3));
       if (field !== "isYamlMode") {
-        // Reset maxUnavailable and maxSurge to defaults if the strategy is not "RollingUpdate"
         if (field === "strategyType") {
           if (value === "RollingUpdate") {
             updatedValues.maxUnavailable = initialData?.maxUnavailable ?? "25%";
             updatedValues.maxSurge = initialData?.maxSurge ?? "25%";
           } else {
-            updatedValues.maxUnavailable = ""; // Clear these values for other strategies
+            updatedValues.maxUnavailable = "";
             updatedValues.maxSurge = "";
           }
         }
-        // Check if any field is different from the initial values
         const modified =
           (updatedValues.isYamlMode && updatedValues.yaml !== (initialData?.yaml ?? "")) ||
           (!updatedValues.isYamlMode &&
@@ -177,11 +185,14 @@ const DeploymentForm: React.FC<DeploymentFormProps> = ({
               updatedValues.image !== (initialData?.image ?? "") ||
               Number(updatedValues.replicas) != (Number(initialData?.replicas) ?? 3) ||
               updatedValues.paused !== (initialData?.paused ?? false) ||
-              updatedValues.envVars !== (initialData?.envVars ?? [{ name: "", value: "" }]) ||
               updatedValues.strategyType !== (initialData?.strategy ?? "RollingUpdate") ||
-              updatedValues.maxUnavailable !== (initialData?.maxUnavailable ?? "25%") ||
-              updatedValues.maxSurge !== (initialData?.maxSurge ?? "25%")));
-        setHasUnsavedChanges(modified);
+              (updatedValues.strategyType === "RollingUpdate" &&
+                (updatedValues.maxUnavailable !== (initialData?.maxUnavailable ?? "25%") ||
+                  updatedValues.maxSurge !== (initialData?.maxSurge ?? "25%")))));
+        setHasUnsavedChanges((prev) => ({
+          ...prev,
+          generalSettings: modified,
+        }));
       } else {
         const modified =
           (updatedValues.isYamlMode && updatedValues.yaml !== (initialData?.yaml ?? "")) ||
@@ -190,24 +201,80 @@ const DeploymentForm: React.FC<DeploymentFormProps> = ({
               updatedValues.image !== (initialData?.image ?? "") ||
               Number(updatedValues.replicas) != (Number(initialData?.replicas) ?? 3) ||
               updatedValues.paused !== (initialData?.paused ?? false) ||
-              updatedValues.envVars !== (initialData?.envVars ?? [{ name: "", value: "" }]) ||
               updatedValues.strategyType !== (initialData?.strategy ?? "RollingUpdate") ||
-              updatedValues.maxUnavailable !== (initialData?.maxUnavailable ?? "25%") ||
-              updatedValues.maxSurge !== (initialData?.maxSurge ?? "25%")));
-        setHasUnsavedChanges(modified);
+              (updatedValues.strategyType === "RollingUpdate" &&
+                (updatedValues.maxUnavailable !== (initialData?.maxUnavailable ?? "25%") ||
+                  updatedValues.maxSurge !== (initialData?.maxSurge ?? "25%")))));
+        setHasUnsavedChanges((prev) => ({
+          ...prev,
+          generalSettings: modified,
+        }));
       }
       return updatedValues;
     });
   };
 
+  /**
+   * Handles change events for environment variables and marks as modified when any field changes
+   */
   const handleEnvVarChange = (index: number, field: "name" | "value", value: string) => {
     const newEnvVars = [...formValues.envVars];
     newEnvVars[index][field] = value;
-    setFormValues((prev) => ({ ...prev, envVars: newEnvVars }));
+    setFormValues((prev) => {
+      const updatedValues = { ...prev, envVars: newEnvVars };
+      const envVarsModified = updatedValues.envVars.some(
+        (envVar, i) =>
+          envVar.name !== (initialData?.envVars?.[i]?.name ?? "") ||
+          envVar.value !== (initialData?.envVars?.[i]?.value ?? "")
+      );
+      setHasUnsavedChanges((prev) => ({
+        ...prev,
+        envVars: envVarsModified,
+      }));
+      return updatedValues;
+    });
   };
 
+  /**
+   * Adds a new environment variable to the form.
+   */
   const addEnvVar = () => {
-    setFormValues((prev) => ({ ...prev, envVars: [...prev.envVars, { name: "", value: "" }] }));
+    setFormValues((prev) => {
+      const updatedValues = { ...prev, envVars: [...prev.envVars, { name: "", value: "" }] };
+      const envVarsModified = updatedValues.envVars.length !== (initialData?.envVars?.length ?? 0);
+      setHasUnsavedChanges((prev) => ({
+        ...prev,
+        envVars: envVarsModified,
+      }));
+      return updatedValues;
+    });
+  };
+
+  /**
+   * Deletes an environment variable from the form.
+   */
+  const deleteEnvVar = (index: number, senVars: any[]) => {
+    let updatedEnvVars;
+    if (senVars.length > 1) {
+      updatedEnvVars = [...formValues.envVars];
+      updatedEnvVars.splice(index, 1);
+    } else {
+      updatedEnvVars = [{ name: "", value: "" }];
+    }
+    setFormValues((prev) => {
+      const updatedValues = { ...prev, envVars: updatedEnvVars };
+      const envVarsModified = updatedValues.envVars.length !== (initialData?.envVars?.length ?? 0);
+      const envVarsChanged = updatedValues.envVars.some(
+        (envVar, i) =>
+          envVar.name !== (initialData?.envVars?.[i]?.name ?? "") ||
+          envVar.value !== (initialData?.envVars?.[i]?.value ?? "")
+      );
+      setHasUnsavedChanges((prev) => ({
+        ...prev,
+        envVars: envVarsModified || envVarsChanged,
+      }));
+      return updatedValues;
+    });
   };
 
   const incrementReplicas = () => {
@@ -281,7 +348,10 @@ const DeploymentForm: React.FC<DeploymentFormProps> = ({
         };
         await onSubmit(deploymentData);
       }
-      setHasUnsavedChanges(false);
+      setHasUnsavedChanges({
+        generalSettings: false,
+        envVars: false,
+      });
       onClose(true);
     } catch (error) {
       console.error("Error during deployment submission:", error);
@@ -295,7 +365,10 @@ const DeploymentForm: React.FC<DeploymentFormProps> = ({
   const handleClose = () => {
     if (hasUnsavedChanges) {
       showDialog("confirmClose", () => {
-        setHasUnsavedChanges(false);
+        setHasUnsavedChanges({
+          generalSettings: false,
+          envVars: false,
+        });
         onClose(true);
       });
     } else {
@@ -315,8 +388,24 @@ const DeploymentForm: React.FC<DeploymentFormProps> = ({
         if (!formValues.maxUnavailable) newErrors.maxUnavailable = "This field is required.";
         if (!formValues.maxSurge) newErrors.maxSurge = "This field is required.";
       }
-    }
+    } else if (activeStep === 2) {
+      const envVarsErrors: { [index: number]: { name?: string; value?: string } } = {};
 
+      formValues.envVars.forEach((envVar, index) => {
+        if (!envVar.name.trim()) {
+          if (!envVarsErrors[index]) envVarsErrors[index] = {};
+          envVarsErrors[index].name = "Please provide a name.";
+        }
+        if (!envVar.value.trim()) {
+          if (!envVarsErrors[index]) envVarsErrors[index] = {};
+          envVarsErrors[index].value = "Please provide a value.";
+        }
+      });
+
+      if (Object.keys(envVarsErrors).length > 0) {
+        newErrors.envVars = envVarsErrors;
+      }
+    }
     // If there are errors, set the errors state and prevent moving to the next step
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -428,7 +517,10 @@ const DeploymentForm: React.FC<DeploymentFormProps> = ({
               <Button onClick={() => handleClose()} disabled={isWaitingForMove}>
                 Cancel
               </Button>
-              <Button onClick={handleSubmit} disabled={!hasUnsavedChanges || isWaitingForMove} variant="contained">
+              <Button
+                onClick={handleSubmit}
+                disabled={(!hasUnsavedChanges.generalSettings && !hasUnsavedChanges.envVars) || isWaitingForMove}
+                variant="contained">
                 {initialData ? "Save" : "Create"}
               </Button>
             </Box>
@@ -552,6 +644,8 @@ const DeploymentForm: React.FC<DeploymentFormProps> = ({
                               onChange={(e) => handleEnvVarChange(index, "name", e.target.value)}
                               fullWidth
                               disabled={isWaitingForMove}
+                              error={!!errors.envVars?.[index]?.name}
+                              helperText={errors.envVars?.[index]?.name || (errors.envVars?.[index]?.value && " ")}
                             />
                           </Grid>
                           <Grid size={{ xs: 5 }}>
@@ -561,24 +655,13 @@ const DeploymentForm: React.FC<DeploymentFormProps> = ({
                               onChange={(e) => handleEnvVarChange(index, "value", e.target.value)}
                               fullWidth
                               disabled={isWaitingForMove}
+                              error={!!errors.envVars?.[index]?.value}
+                              helperText={errors.envVars?.[index]?.value || (errors.envVars?.[index]?.name && " ")}
                             />
                           </Grid>
                           <Grid size={{ xs: 2 }}>
                             <IconButton
-                              onClick={() => {
-                                if (senVars.length > 1) {
-                                  // Delete subsequent inputs
-                                  const newEnvVars = [...formValues.envVars];
-                                  newEnvVars.splice(index, 1);
-                                  setFormValues((prev) => ({ ...prev, envVars: newEnvVars }));
-                                } else {
-                                  // Reset the first input
-                                  setFormValues((prev) => ({
-                                    ...prev,
-                                    envVars: [{ name: "", value: "" }],
-                                  }));
-                                }
-                              }}
+                              onClick={() => deleteEnvVar(index, senVars)}
                               disabled={isWaitingForMove || (senVars.length === 1 && !envVar.name && !envVar.value)}>
                               <DeleteIcon />
                             </IconButton>
@@ -670,7 +753,9 @@ const DeploymentForm: React.FC<DeploymentFormProps> = ({
                       <Button
                         variant="contained"
                         onClick={handleSubmit}
-                        disabled={!hasUnsavedChanges || isWaitingForMove}
+                        disabled={
+                          (!hasUnsavedChanges.generalSettings && !hasUnsavedChanges.envVars) || isWaitingForMove
+                        }
                         sx={{ mt: 2, ml: 2 }}>
                         {isEditMode ? "Save" : "Create"}
                       </Button>

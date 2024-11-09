@@ -53,9 +53,11 @@ const Applications: React.FC<{}> = (): JSX.Element => {
         console.error("Failed to fetch applications:", error);
         addNotification("Failed to fetch applications.", "error");
       } finally {
-        setLoading(false);
-        setOpenForm(false);
-        setCurrentApplication(null);
+        if (isMounted) {
+          setLoading(false);
+          setOpenForm(false);
+          setCurrentApplication(null);
+        }
       }
     };
     getApplications();
@@ -110,7 +112,6 @@ const Applications: React.FC<{}> = (): JSX.Element => {
    */
   const handleDelete = async (slug: string) => {
     try {
-      console.log("Deleting application:", slug);
       if (slug) {
         await deleteApplication(slug);
         setApplications(applications.filter((app) => app.slug !== slug));

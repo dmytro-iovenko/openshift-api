@@ -6,7 +6,6 @@ import { AuthContext } from "../context/AuthContext";
 import { getColorFromName } from "../helpers/colors";
 
 const stringAvatar = (name: string) => {
-  console.log(name);
   const nameParts = name.split(" ");
   const firstLetter = nameParts[0][0].toUpperCase();
   const secondLetter = nameParts.length > 1 ? nameParts[1][0].toUpperCase() : "";

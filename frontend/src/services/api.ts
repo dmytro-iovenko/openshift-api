@@ -117,7 +117,6 @@ export const createDeployment = async (deployment: {
   maxUnavailable: string;
   maxSurge: string;
 }): Promise<Deployment> => {
-  console.log("createDeployment", deployment);
   const response = await apiClient.post(`${API_BASE_URL}/api/deployments`, deployment);
   return response.data;
 };

@@ -41,7 +41,7 @@ export const authorizeRole = (roles) => {
  */
 export const checkDeploymentOwnership = async (req, res, next) => {
   const { deploymentId } = req.params;
-  console.log(deploymentId);
+  const { id: userId, role } = req.user;
   try {
     const document = await Deployment.findById(deploymentId);
     if (!document) {
@@ -49,7 +49,7 @@ export const checkDeploymentOwnership = async (req, res, next) => {
     }
 
     // If the user is a regular user, check if they are the owner of the resource
-    if (req.user.role === "user" && String(document.owner) !== String(req.user.userId)) {
+    if (role === "user" && String(document.owner) !== String(userId)) {
       return res.status(StatusCodes.FORBIDDEN).json({ message: "You are not the owner of this deployment" });
     }
 
@@ -64,6 +64,7 @@ export const checkDeploymentOwnership = async (req, res, next) => {
  */
 export const checkApplicationOwnership = async (req, res, next) => {
   const { slug } = req.params;
+  const { id: userId, role } = req.user;
   try {
     const document = await Application.findOne({ slug });
     if (!document) {
@@ -71,7 +72,7 @@ export const checkApplicationOwnership = async (req, res, next) => {
     }
 
     // If the user is a regular user, check if they are the owner of the resource
-    if (req.user.role === "user" && String(document.owner) !== String(req.user.userId)) {
+    if (role === "user" && String(document.owner) !== String(userId)) {
       return res.status(StatusCodes.FORBIDDEN).json({ message: "You are not the owner of this application" });
     }
 

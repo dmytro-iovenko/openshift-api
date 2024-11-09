@@ -139,10 +139,6 @@ export default function SignUp(_props: { disableCustomTheme?: boolean }) {
     if (nameError || emailError || passwordError) {
       return;
     }
-    console.log("name", name);
-    console.log("email", email);
-    console.log("password", password);
-
     signup(email, password, name);
   };
 

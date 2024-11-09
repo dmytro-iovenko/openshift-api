@@ -4,6 +4,7 @@ import error from "../utils/errorUtils.js";
 import { fetchApplicationsWithDeployments, generateBaseSlug, generateUniqueSlug } from "../utils/applicationUtils.js";
 import {
   fetchAndUpdateDeploymentById,
+  fetchAndUpdateDeployment,
   generateUniqueDeploymentName,
   updateDeploymentStatus,
 } from "../utils/deploymentUtils.js";
@@ -171,7 +172,7 @@ export const getApplication = async (req, res, next) => {
  */
 export const deleteApplication = async (req, res, next) => {
   const { slug } = req.params;
-  const { id: userId } = req.user;
+  const { id: userId, role } = req.user;
 
   logger.debug("Deleting application: " + slug);
   try {
@@ -179,10 +180,9 @@ export const deleteApplication = async (req, res, next) => {
     if (!application) {
       return next(error(StatusCodes.NOT_FOUND, "Application not found"));
     }
-    console.log(application.owner._id.toString(), userId, req.user.role);
 
     // Check ownership (or admin)
-    if (application.owner._id.toString() !== userId && req.user.role !== "admin") {
+    if (application.owner._id.toString() !== userId && role !== "admin") {
       return next(error(StatusCodes.FORBIDDEN, "You are not allowed to delete this application"));
     }
 
@@ -225,7 +225,7 @@ export const deleteApplication = async (req, res, next) => {
 export const updateApplication = validateUpdateApplication.concat(async (req, res, next) => {
   const { slug } = req.params;
   const { name, description } = req.body;
-  const { id: userId } = req.user;
+  const { id: userId, role } = req.user;
 
   logger.debug("Updating application:", { slug, name, description });
   try {
@@ -235,7 +235,7 @@ export const updateApplication = validateUpdateApplication.concat(async (req, re
     }
 
     // Check ownership (or admin)
-    if (application.owner._id.toString() !== userId && req.user.role !== "admin") {
+    if (application.owner._id.toString() !== userId && role !== "admin") {
       return next(error(StatusCodes.FORBIDDEN, "You are not allowed to update this application"));
     }
 

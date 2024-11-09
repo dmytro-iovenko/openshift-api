@@ -42,7 +42,7 @@ export const generateBaseSlug = async (name) => slugify(name, { lower: true, str
  * @returns {Promise<string>} - A promise that resolves to a unique slug.
  */
 export const generateUniqueSlug = async (name) => {
-  const baseSlug = generateBaseSlug(name);
+  const baseSlug = await generateBaseSlug(name);
   let uniqueSlug = baseSlug;
 
   // Check if the slug already exists
