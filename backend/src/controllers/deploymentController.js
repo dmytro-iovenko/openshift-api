@@ -41,6 +41,7 @@ const validateDeploymentFromYaml = [
 // Middleware to check if the user owns the application
 export const checkDeploymentOwnership = (req, res, next) => {
   const { applicationId } = req.body;
+  const { id: userId, role } = req.user;
 
   Application.findById(applicationId)
     .then((application) => {
@@ -49,7 +50,7 @@ export const checkDeploymentOwnership = (req, res, next) => {
       }
 
       // If the user is not the owner or admin
-      if (req.user.role === "user" && String(application.owner) !== String(req.user.userId)) {
+      if (role === "user" && String(application.owner) !== String(userId)) {
         return next(error(StatusCodes.FORBIDDEN, "You are not the owner of this application"));
       }
 
@@ -70,12 +71,13 @@ export const checkDeploymentOwnership = (req, res, next) => {
  */
 export const createDeployment = validateCreateDeployment.concat(async (req, res, next) => {
   const { applicationId, name, image, replicas, paused, envVars, strategy, maxUnavailable, maxSurge } = req.body;
+  const { id: userId } = req.user;
 
   logger.debug(
     "Creating deployment:" +
       JSON.stringify({
         applicationId,
-        owner: req.user.userId,
+        owner: userId,
         name,
         image,
         replicas,
@@ -118,7 +120,7 @@ export const createDeployment = validateCreateDeployment.concat(async (req, res,
       applicationId,
       name: deploymentData.metadata.name,
       image,
-      owner: req.user.userId,
+      owner: userId,
       replicas,
       strategy,
       // maxUnavailable,
@@ -158,6 +160,7 @@ export const createDeployment = validateCreateDeployment.concat(async (req, res,
  */
 export const createDeploymentFromYaml = validateDeploymentFromYaml.concat(async (req, res, next) => {
   const { yamlDefinition, applicationId } = req.body;
+  const { id: userId } = req.user;
   if (!applicationId) {
     return next(error(StatusCodes.BAD_REQUEST, "Application ID is required"));
   }
@@ -182,7 +185,7 @@ export const createDeploymentFromYaml = validateDeploymentFromYaml.concat(async 
       applicationId,
       name: deploymentData.metadata.name,
       image: deploymentConfig.spec.template.spec.containers[0].image,
-      owner: req.user.userId,
+      owner: userId,
     });
 
     const savedDeployment = await deployment.save();
@@ -206,7 +209,7 @@ export const createDeploymentFromYaml = validateDeploymentFromYaml.concat(async 
  * @returns {Promise<void>} - Responds with a list of deployments.
  */
 export const getDeployments = async (req, res, next) => {
-  const { userId, role } = req.user;
+  const { id: userId, role } = req.user;
 
   logger.debug("Retrieving all deployments.");
   try {
@@ -242,7 +245,7 @@ export const getDeployments = async (req, res, next) => {
  */
 export const getDeployment = async (req, res, next) => {
   const { deploymentId } = req.params;
-  const { userId } = req.user;
+  const { id: userId, role } = req.user;
 
   logger.debug("Retrieving deployment details:", { deploymentId });
 
@@ -253,7 +256,7 @@ export const getDeployment = async (req, res, next) => {
     }
 
     // Check if the logged-in user is the owner or an admin
-    if (req.user.role !== "admin" && String(deployment.owner._id) !== String(userId)) {
+    if (role !== "admin" && String(deployment.owner._id) !== String(userId)) {
       return res.status(StatusCodes.FORBIDDEN).json({ message: "You are not authorized to access this deployment" });
     }
 
@@ -283,7 +286,7 @@ export const getDeployment = async (req, res, next) => {
  */
 export const updateDeployment = validateUpdateDeployment.concat(async (req, res, next) => {
   const { deploymentId } = req.params;
-  const { userId } = req.user;
+  const { id: userId, role } = req.user;
 
   // const { name, image } = req.body;
   // const { name, image, replicas, paused, envVars, strategy, maxUnavailable, maxSurge } = req.body;
@@ -304,7 +307,7 @@ export const updateDeployment = validateUpdateDeployment.concat(async (req, res,
     }
 
     // Check if the user has access to update this deployment
-    if (req.user.role !== "admin" && String(deployment.owner._id) !== String(userId)) {
+    if (role !== "admin" && String(deployment.owner._id) !== String(userId)) {
       return next(error(StatusCodes.FORBIDDEN, "You are not authorized to update this deployment"));
     }
 
@@ -374,7 +377,7 @@ export const updateDeployment = validateUpdateDeployment.concat(async (req, res,
  */
 export const deleteDeployment = async (req, res, next) => {
   const { deploymentId } = req.params;
-  const { userId } = req.user;
+  const { id: userId, role } = req.user;
 
   logger.debug("Deleting deployment:", { deploymentId });
 
@@ -385,7 +388,7 @@ export const deleteDeployment = async (req, res, next) => {
     }
 
     // Check if the user has access to delete this deployment
-    if (req.user.role !== "admin" && String(deployment.owner._id) !== String(userId)) {
+    if (role !== "admin" && String(deployment.owner._id) !== String(userId)) {
       return next(error(StatusCodes.FORBIDDEN, "You are not authorized to delete this deployment"));
     }
 

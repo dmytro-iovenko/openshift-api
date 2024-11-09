@@ -15,8 +15,8 @@ export const protect = async (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET); // Verify the token
-    req.user = decoded; // Attach decoded user data to the request object
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded.user;
     next();
   } catch (error) {
     res.status(StatusCodes.UNAUTHORIZED).json({ message: "Invalid or expired token" });

@@ -62,7 +62,8 @@ export default function SignUp(_props: { disableCustomTheme?: boolean }) {
 
   const navigate = useNavigate();
 
-  const handleSignIn = () => {
+  const handleSignIn = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
     setError("");
     navigate("/login");
   };
@@ -174,6 +175,8 @@ export default function SignUp(_props: { disableCustomTheme?: boolean }) {
                 placeholder="Jon Snow"
                 required
                 fullWidth
+                autoFocus
+                tabIndex={0}
               />
             </FormControl>
             <FormControl>
@@ -192,6 +195,7 @@ export default function SignUp(_props: { disableCustomTheme?: boolean }) {
                 variant="outlined"
                 required
                 fullWidth
+                tabIndex={1}
               />
             </FormControl>
             <FormControl>
@@ -210,6 +214,7 @@ export default function SignUp(_props: { disableCustomTheme?: boolean }) {
                 variant="outlined"
                 required
                 fullWidth
+                tabIndex={2}
               />
             </FormControl>
             <FormControlLabel

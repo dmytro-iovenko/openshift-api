@@ -58,7 +58,7 @@ const fetchOpenShiftDeployments = async () => {
  */
 export const createApplication = validateApplication.concat(async (req, res, next) => {
   const { name, description, image } = req.body;
-  const { userId } = req.user;
+  const { id: userId } = req.user;
 
   logger.debug("Creating application:", { name, description, image });
   try {
@@ -108,7 +108,7 @@ export const createApplication = validateApplication.concat(async (req, res, nex
  * @returns {Promise<void>} - Responds with a list of applications.
  */
 export const getApplications = async (req, res, next) => {
-  const { userId, role } = req.user;
+  const { id: userId, role } = req.user;
   logger.debug("Fetching applications");
   try {
     if (!userId) {
@@ -171,7 +171,7 @@ export const getApplication = async (req, res, next) => {
  */
 export const deleteApplication = async (req, res, next) => {
   const { slug } = req.params;
-  const { userId } = req.user;
+  const { id: userId } = req.user;
 
   logger.debug("Deleting application: " + slug);
   try {
@@ -225,7 +225,7 @@ export const deleteApplication = async (req, res, next) => {
 export const updateApplication = validateUpdateApplication.concat(async (req, res, next) => {
   const { slug } = req.params;
   const { name, description } = req.body;
-  const { userId } = req.user;
+  const { id: userId } = req.user;
 
   logger.debug("Updating application:", { slug, name, description });
   try {

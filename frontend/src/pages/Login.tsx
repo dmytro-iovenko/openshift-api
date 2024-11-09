@@ -58,7 +58,8 @@ export default function SignIn() {
 
   const navigate = useNavigate();
 
-  const handleSignUp = () => {
+  const handleSignUp = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
     setError("");
     navigate("/signup");
   };
@@ -140,6 +141,7 @@ export default function SignIn() {
                 variant="outlined"
                 color={emailError ? "error" : "primary"}
                 sx={{ ariaLabel: "email" }}
+                tabIndex={0}
               />
             </FormControl>
             <FormControl>
@@ -150,7 +152,8 @@ export default function SignIn() {
                   type="button"
                   onClick={() => {}}
                   variant="body2"
-                  sx={{ alignSelf: "baseline" }}>
+                  sx={{ alignSelf: "baseline" }}
+                  tabIndex={-1}>
                   Forgot your password?
                 </Link>
               </Box>
@@ -169,6 +172,7 @@ export default function SignIn() {
                 fullWidth
                 variant="outlined"
                 color={passwordError ? "error" : "primary"}
+                tabIndex={1}
               />
             </FormControl>
             <FormControlLabel control={<Checkbox value="remember" color="primary" />} label="Remember me" />
@@ -184,7 +188,7 @@ export default function SignIn() {
             <Typography sx={{ textAlign: "center" }}>
               Don&apos;t have an account?{" "}
               <span>
-                <Link component="button" variant="body2" onClick={handleSignUp}>
+                <Link component="button" variant="body2" onClick={handleSignUp} tabIndex={3}>
                   Sign up
                 </Link>
               </span>
