@@ -43,7 +43,6 @@ const ApplicationDetails: React.FC<{}> = (): JSX.Element => {
   const [originalAppId, setOriginalAppId] = useState("");
 
   const [isRefreshing, setIsAllRefreshing] = useState<boolean>(false);
-
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState<{
     generalSettings: boolean;
     envVars: boolean;
@@ -136,9 +135,9 @@ const ApplicationDetails: React.FC<{}> = (): JSX.Element => {
         setDeployments([...deployments, newDeployment]);
         addNotification("Deployment created successfully!", "success");
       }
-    } catch (error) {
-      console.error("Error during deployment submission:", error);
+    } catch (error: any) {
       addNotification("Error saving deployment. Please try again.", "error");
+      throw error;
     }
   };
   /**
@@ -265,7 +264,7 @@ const ApplicationDetails: React.FC<{}> = (): JSX.Element => {
     name: d.name,
     status: `${d.availableReplicas} of ${d.replicas} pods`,
     availability: d.availableReplicas > 0 ? "Available" : "Not Available",
-    labels: Object.entries(d.labels).map(([key, value]) => `${key}=${value}`),
+    labels: d.labels ? Object.entries(d.labels).map(([key, value]) => `${key}=${value}`) : [],
     createdAt: d.createdAt,
   }));
 

@@ -19,6 +19,7 @@ import {
   StepContent,
   IconButton,
   InputAdornment,
+  FormHelperText,
 } from "@mui/material";
 
 /**
@@ -129,6 +130,7 @@ const DeploymentForm: React.FC<DeploymentFormProps> = ({
     maxUnavailable?: string;
     maxSurge?: string;
     envVars?: { [index: number]: { name?: string; value?: string } };
+    formError?: string;
   }>({});
 
   useEffect(() => {
@@ -353,8 +355,10 @@ const DeploymentForm: React.FC<DeploymentFormProps> = ({
         envVars: false,
       });
       onClose(true);
-    } catch (error) {
-      console.error("Error during deployment submission:", error);
+    } catch (error: any) {
+      // console.error("Error during deployment submission:", error);
+      const formError = error.response?.data?.message || "Error saving deployment. Please try again.";
+      setErrors((prev) => ({ ...prev, formError }));
     }
   };
 
@@ -491,7 +495,10 @@ const DeploymentForm: React.FC<DeploymentFormProps> = ({
           control={
             <Switch
               checked={formValues.isYamlMode}
-              onChange={(e) => handleChange("isYamlMode", e.target.checked)}
+              onChange={(e) => {
+                handleChange("isYamlMode", e.target.checked);
+                setErrors({});
+              }}
               disabled={isWaitingForMove}
             />
           }
@@ -746,7 +753,6 @@ const DeploymentForm: React.FC<DeploymentFormProps> = ({
                           The number of instances of your Image.
                         </Typography>
                       </Box>
-
                       <Button variant="contained" onClick={handleBack} sx={{ mt: 2 }} disabled={isWaitingForMove}>
                         Back
                       </Button>
@@ -769,6 +775,8 @@ const DeploymentForm: React.FC<DeploymentFormProps> = ({
             </Box> */}
           </>
         ))}
+      {/* Display form-level error (e.g., submit error) */}
+      {errors.formError && <FormHelperText error>{errors.formError}</FormHelperText>}
     </Box>
   );
 };

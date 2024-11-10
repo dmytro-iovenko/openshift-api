@@ -128,8 +128,8 @@ const Deployments: React.FC = (): JSX.Element => {
         addNotification("Deployment created successfully!", "success");
       }
     } catch (error) {
-      console.error("Error during deployment submission:", error);
       addNotification("Error saving deployment. Please try again.", "error");
+      throw error;
     }
   };
 

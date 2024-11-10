@@ -267,7 +267,7 @@ const DeploymentTable: React.FC<DeploymentTableProps> = ({
     name: dep.name,
     status: `${dep.availableReplicas} of ${dep.replicas} pods`,
     availability: dep.availableReplicas > 0 ? "Available" : "Not Available",
-    labels: Object.entries(dep.labels).map(([key, value]) => `${key}=${value}`),
+    labels: dep.labels ? Object.entries(dep.labels).map(([key, value]) => `${key}=${value}`) : [],
     age: calculateAge(dep.createdAt),
   }));
 
