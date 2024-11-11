@@ -125,7 +125,7 @@ const applyFilter = (deployments: Deployment[], selectedFilters: { [key: string]
   });
 };
 
-interface DeploymentTableProps {
+export interface DeploymentTableProps {
   deployments: Deployment[];
   loading: boolean;
   onEdit: (deployment: Deployment) => void;
@@ -211,22 +211,22 @@ const DeploymentTable: React.FC<DeploymentTableProps> = ({
     setFilterMenuAnchor(null);
   };
 
-  const applyColumnFilter = (values: string[]) => {
-    if (filterColumn) {
-      setSelectedFilters((prev) => {
-        const updatedFilters = { ...prev };
+  // const applyColumnFilter = (values: string[]) => {
+  //   if (filterColumn) {
+  //     setSelectedFilters((prev) => {
+  //       const updatedFilters = { ...prev };
 
-        if (values.length === 0 || values.includes("All")) {
-          delete updatedFilters[filterColumn];
-        } else {
-          updatedFilters[filterColumn] = values;
-        }
+  //       if (values.length === 0 || values.includes("All")) {
+  //         delete updatedFilters[filterColumn];
+  //       } else {
+  //         updatedFilters[filterColumn] = values;
+  //       }
 
-        return updatedFilters;
-      });
-    }
-    closeFilterMenu();
-  };
+  //       return updatedFilters;
+  //     });
+  //   }
+  //   closeFilterMenu();
+  // };
 
   // Function to handle the reset of the filter for the column
   const resetColumnFilter = () => {
@@ -393,13 +393,13 @@ const DeploymentTable: React.FC<DeploymentTableProps> = ({
             endAdornment={
               <InputAdornment position="start">
                 {/* Apply Filter Button */}
-                <IconButton
+                {/* <IconButton
                   color="primary"
                   size="small"
                   onClick={() => applyColumnFilter(selectedFilters[filterColumn!] || [])}
                   disabled={!selectedFilters[filterColumn!]?.length}>
                   <FilterListIcon />
-                </IconButton>
+                </IconButton> */}
                 {/* Reset Filter Button */}
                 <IconButton
                   color="secondary"

@@ -21,6 +21,9 @@ import LoadingButton from "@mui/lab/LoadingButton";
 import DeploymentTable from "../components/deployments/DeploymentTable";
 import DrawerWithForm from "../components/DrawerWithForm";
 import { PageContainer, PageContainerToolbar } from "@toolpad/core";
+import { useScreenSize } from "../context/ScreenSizeContext";
+import DeploymentList from "../components/deployments/DeploymentList";
+import { IconButton, Tooltip } from "@mui/material";
 
 const Deployments: React.FC = (): JSX.Element => {
   const { addNotification } = useNotification();
@@ -42,6 +45,8 @@ const Deployments: React.FC = (): JSX.Element => {
     generalSettings: false,
     envVars: false,
   });
+
+  const { isMobile } = useScreenSize();
 
   /**
    * Fetches deployments from the API when the component mounts.
@@ -235,22 +240,38 @@ const Deployments: React.FC = (): JSX.Element => {
   const PageToolbar = () => {
     return (
       <PageContainerToolbar>
-        <LoadingButton
-          variant="outlined"
-          color="primary"
-          onClick={handleRefreshAll}
-          loading={isRefreshing}
-          loadingPosition="start"
-          startIcon={<RefreshIcon />}>
-          Refresh All
-        </LoadingButton>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={() => setOpenForm(true)}
-          startIcon={<AddCircleTwoToneIcon />}>
-          Add Deployment
-        </Button>
+        {!isMobile ? (
+          <LoadingButton
+            variant="outlined"
+            color="primary"
+            onClick={handleRefreshAll}
+            loading={isRefreshing}
+            loadingPosition="start"
+            startIcon={<RefreshIcon />}>
+            Refresh All
+          </LoadingButton>
+        ) : (
+          <Tooltip title="Refresh All Deployments">
+            <IconButton color="primary" onClick={handleRefreshAll}>
+              <RefreshIcon />
+            </IconButton>
+          </Tooltip>
+        )}
+        {!isMobile ? (
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => setOpenForm(true)}
+            startIcon={<AddCircleTwoToneIcon />}>
+            Add Deployment
+          </Button>
+        ) : (
+          <Tooltip title="Add Deployment">
+            <IconButton color="primary" onClick={() => setOpenForm(true)}>
+              <AddCircleTwoToneIcon />
+            </IconButton>
+          </Tooltip>
+        )}
       </PageContainerToolbar>
     );
   };
@@ -260,15 +281,27 @@ const Deployments: React.FC = (): JSX.Element => {
       <ManagedDialogs itemType="deployment">
         {(showDialog) => (
           <>
-            <DeploymentTable
-              deployments={deployments}
-              loading={loading}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              onRefresh={refreshDeployment}
-              IsDeplRefreshing={isDeplRefreshing}
-              isRefreshing={isRefreshing}
-            />
+            {isMobile ? (
+              <DeploymentList
+                deployments={deployments}
+                loading={loading}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                onRefresh={refreshDeployment}
+                IsDeplRefreshing={isDeplRefreshing}
+                isRefreshing={isRefreshing}
+              />
+            ) : (
+              <DeploymentTable
+                deployments={deployments}
+                loading={loading}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                onRefresh={refreshDeployment}
+                IsDeplRefreshing={isDeplRefreshing}
+                isRefreshing={isRefreshing}
+              />
+            )}
 
             <DrawerWithForm
               open={openForm}

@@ -20,6 +20,9 @@ import {
 import LoadingButton from "@mui/lab/LoadingButton";
 import { PageContainer, PageContainerToolbar } from "@toolpad/core";
 import DrawerWithForm from "../components/DrawerWithForm";
+import { useScreenSize } from "../context/ScreenSizeContext";
+import IconButton from "@mui/material/IconButton";
+import { Tooltip } from "@mui/material";
 
 /**
  * Applications component to fetch and display a list of applications.
@@ -36,6 +39,8 @@ const Applications: React.FC<{}> = (): JSX.Element => {
   const [isAppRefreshing, setIsAppRefreshing] = useState<string | null>(null);
 
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  const { isMobile } = useScreenSize();
 
   /**
    * Fetches applications from the API when the component mounts.
@@ -191,31 +196,45 @@ const Applications: React.FC<{}> = (): JSX.Element => {
     return <Loader />;
   }
 
-  // preview-start
   const PageToolbar = () => {
     return (
       <PageContainerToolbar>
-        <LoadingButton
-          variant="outlined"
-          color="primary"
-          onClick={handleRefreshAll}
-          loading={isRefreshing}
-          loadingPosition="start"
-          startIcon={<RefreshIcon />}>
-          Refresh All
-        </LoadingButton>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={() => setOpenForm(true)}
-          startIcon={<AddCircleTwoToneIcon />}>
-          Add Application
-        </Button>
+        {!isMobile ? (
+          <LoadingButton
+            variant="outlined"
+            color="primary"
+            onClick={handleRefreshAll}
+            loading={isRefreshing}
+            loadingPosition="start"
+            startIcon={<RefreshIcon />}>
+            Refresh All
+          </LoadingButton>
+        ) : (
+          <Tooltip title="Refresh All Applications">
+            <IconButton color="primary" onClick={handleRefreshAll}>
+              <RefreshIcon />
+            </IconButton>
+          </Tooltip>
+        )}
+        {!isMobile ? (
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => setOpenForm(true)}
+            startIcon={<AddCircleTwoToneIcon />}>
+            {!isMobile && "Add Application"}
+          </Button>
+        ) : (
+          <Tooltip title="Add Application">
+            <IconButton color="primary" onClick={() => setOpenForm(true)}>
+              <AddCircleTwoToneIcon />
+            </IconButton>
+          </Tooltip>
+        )}
       </PageContainerToolbar>
     );
   };
 
-  // preview-end
   return (
     <PageContainer slots={{ toolbar: PageToolbar }} maxWidth={false}>
       <ManagedDialogs itemType="application">
@@ -251,7 +270,6 @@ const Applications: React.FC<{}> = (): JSX.Element => {
                       ? {
                           name: currentApplication.name,
                           description: currentApplication.description,
-                          // image: currentApplication.image,
                           slug: currentApplication.slug,
                         }
                       : undefined

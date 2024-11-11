@@ -395,16 +395,17 @@ const DeploymentForm: React.FC<DeploymentFormProps> = ({
     } else if (activeStep === 2) {
       const envVarsErrors: { [index: number]: { name?: string; value?: string } } = {};
 
-      formValues.envVars.forEach((envVar, index) => {
-        if (!envVar.name.trim()) {
-          if (!envVarsErrors[index]) envVarsErrors[index] = {};
-          envVarsErrors[index].name = "Please provide a name.";
-        }
-        if (!envVar.value.trim()) {
-          if (!envVarsErrors[index]) envVarsErrors[index] = {};
-          envVarsErrors[index].value = "Please provide a value.";
-        }
-      });
+      formValues.envVars.length > 1 &&
+        formValues.envVars.forEach((envVar, index) => {
+          if (!envVar.name.trim()) {
+            if (!envVarsErrors[index]) envVarsErrors[index] = {};
+            envVarsErrors[index].name = "Please provide a name.";
+          }
+          if (!envVar.value.trim()) {
+            if (!envVarsErrors[index]) envVarsErrors[index] = {};
+            envVarsErrors[index].value = "Please provide a value.";
+          }
+        });
 
       if (Object.keys(envVarsErrors).length > 0) {
         newErrors.envVars = envVarsErrors;

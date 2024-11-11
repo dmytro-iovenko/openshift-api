@@ -8,6 +8,7 @@ import { IconButton, ThemeProvider } from "@mui/material";
 import { NotificationProvider } from "./context/NotificationContext";
 import theme from "./themes/theme";
 import { AuthProvider } from "./context/AuthContext";
+import { ScreenSizeProvider } from "./context/ScreenSizeContext";
 
 // Navigation structure
 const navigation: Navigation = [
@@ -34,11 +35,13 @@ export default function App() {
   return (
     <ThemeProvider theme={theme("light")}>
       <AuthProvider>
-        <AppProvider navigation={navigation} branding={branding}>
-          <NotificationProvider>
-            <Outlet />
-          </NotificationProvider>
-        </AppProvider>
+        <ScreenSizeProvider>
+          <AppProvider navigation={navigation} branding={branding}>
+            <NotificationProvider>
+              <Outlet />
+            </NotificationProvider>
+          </AppProvider>
+        </ScreenSizeProvider>
       </AuthProvider>
     </ThemeProvider>
   );
