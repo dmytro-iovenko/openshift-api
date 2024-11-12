@@ -18,12 +18,13 @@ import {
   fetchApplications,
 } from "../services/api";
 import LoadingButton from "@mui/lab/LoadingButton";
-import DeploymentTable from "../components/deployments/DeploymentTable";
+// import DeploymentTable from "../components/deployments/DeploymentTable";
 import DrawerWithForm from "../components/DrawerWithForm";
 import { PageContainer, PageContainerToolbar } from "@toolpad/core";
 import { useScreenSize } from "../context/ScreenSizeContext";
 import DeploymentList from "../components/deployments/DeploymentList";
 import { IconButton, Tooltip } from "@mui/material";
+import TableWrapper from "../components/TableWrapper";
 
 const Deployments: React.FC = (): JSX.Element => {
   const { addNotification } = useNotification();
@@ -276,6 +277,63 @@ const Deployments: React.FC = (): JSX.Element => {
     );
   };
 
+  // Define columns and data for the deployments table
+  const columns = [
+    { id: "app", label: "Application Name" },
+    { id: "name", label: "Deployment Name" },
+    { id: "status", label: "Status" },
+    { id: "availability", label: "Availability" },
+    { id: "labels", label: "Labels" },
+    { id: "age", label: "Age" },
+  ];
+
+  // Map deployment data to table rows
+  const data: any = deployments.map((d) => ({
+    id: d._id,
+    app: d.application.name,
+    name: d.name,
+    status: `${d.availableReplicas} of ${d.replicas} pods`,
+    availability: d.availableReplicas > 0 ? "Available" : "Not Available",
+    labels: d.labels ? Object.entries(d.labels).map(([key, value]) => `${key}=${value}`) : [],
+    createdAt: d.createdAt,
+  }));
+
+  const handleRowAction = async (action: string, id: string) => {
+    if (action === "edit") {
+      const deployment = deployments.find((d) => d._id === id);
+      if (deployment) {
+        setSelectedAppId(deployment.application._id);
+        setOriginalAppId(deployment.application._id);
+        setCurrentDeployment(deployment);
+        setOpenForm(true);
+      } else {
+        addNotification("No deployment found for edition.", "error");
+      }
+    } else if (action === "delete") {
+      try {
+        if (id) {
+          await deleteDeployment(id);
+          setDeployments(deployments.filter((depl) => depl._id !== id));
+          addNotification("Deployment deleted successfully!", "success");
+        } else {
+          addNotification("No deployment ID provided for deletion.", "error");
+        }
+      } catch (error) {
+        console.error("Delete failed:", error);
+        addNotification("Failed to delete deployment. Please try again.", "error");
+      }
+    } else if (action === "refresh") {
+      try {
+        const updatedDepl = await fetchDeployment(id);
+        setDeployments((prev) => prev.map((depl) => (depl._id === updatedDepl._id ? updatedDepl : depl)));
+        addNotification(`Deployment "${updatedDepl.name}" refreshed successfully.`, "success");
+      } catch (error) {
+        console.error("Error fetching deployment:", error);
+        addNotification("Failed to refresh deployment. Please try again.", "error");
+      }
+    }
+  };
+
   return (
     <PageContainer slots={{ toolbar: PageToolbar }} maxWidth={false}>
       <ManagedDialogs itemType="deployment">
@@ -292,15 +350,25 @@ const Deployments: React.FC = (): JSX.Element => {
                 isRefreshing={isRefreshing}
               />
             ) : (
-              <DeploymentTable
-                deployments={deployments}
-                loading={loading}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                onRefresh={refreshDeployment}
-                IsDeplRefreshing={isDeplRefreshing}
+              <TableWrapper
+                columns={columns}
+                data={data}
+                onRowAction={handleRowAction}
+                rowActions={{ edit: "edit", delete: "delete", refresh: "refresh" }}
                 isRefreshing={isRefreshing}
+                initialOrder="asc"
+                initialOrderBy="name"
+                rowsPerPage={10}
               />
+              // <DeploymentTable
+              //   deployments={deployments}
+              //   loading={loading}
+              //   onEdit={handleEdit}
+              //   onDelete={handleDelete}
+              //   onRefresh={refreshDeployment}
+              //   IsDeplRefreshing={isDeplRefreshing}
+              //   isRefreshing={isRefreshing}
+              // />
             )}
 
             <DrawerWithForm

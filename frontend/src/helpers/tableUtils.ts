@@ -1,3 +1,5 @@
+// tableUtils.ts
+
 // Sorting functions
 export function descendingComparator<T extends Record<string, any>>(a: T, b: T, orderBy: string): number {
   if (b[orderBy] < a[orderBy]) {
@@ -32,8 +34,21 @@ export const applyFilter = (
           value = item.availableReplicas > 0 ? "Available" : "Not Available";
         } else if (column === "labels") {
           value = convertLabelsToString(item.labels).join(" ");
+        } else if (column === "age") {
+          value = calculateAge(item.createdAt);
         } else {
           value = item[column];
+        }
+
+        if (column === "age") {
+          return selectedValues.some((selectedValue) => {
+            const rowAgeInDays = calculateAgeInDays(item.createdAt);
+
+            if (selectedValue === "Less than 1 day" && rowAgeInDays < 1) return true;
+            if (selectedValue === "1-2 days" && rowAgeInDays >= 1 && rowAgeInDays <= 2) return true;
+            if (selectedValue === "More than 2 days" && rowAgeInDays > 2) return true;
+            return false;
+          });
         }
 
         if (Array.isArray(value)) {
@@ -60,6 +75,15 @@ export const applyFilter = (
   });
 };
 
+// Helper function to calculate age in days for easier comparison in filters
+export const calculateAgeInDays = (createdAt: string) => {
+  const createdDate = new Date(createdAt);
+  const now = new Date();
+  const diffInMilliseconds = now.getTime() - createdDate.getTime();
+  const diffInDays = diffInMilliseconds / (1000 * 3600 * 24); // Convert milliseconds to days
+  return diffInDays;
+};
+
 // Calculate the age of the deployment
 export const calculateAge = (createdAt: string) => {
   const createdDate = new Date(createdAt);
@@ -73,4 +97,45 @@ export const calculateAge = (createdAt: string) => {
   if (minutes < 60) return `${minutes}m ${diffInSeconds % 60}s`;
   if (hours < 24) return `${hours}h ${minutes % 60}m`;
   return `${days}d ${hours % 24}h`;
+};
+
+// Helper function to get distinct filter values for a given column
+export const getDistinctValues = (columnId: string, data: any[]) => {
+  if (columnId === "age") {
+    return ["Less than 1 day", "1-2 days", "More than 2 days"];
+  }
+  const uniqueValues = new Set<string>();
+  data.forEach((row) => {
+    if (columnId === "labels" && row[columnId]) {
+      row[columnId].forEach((label: string) => uniqueValues.add(label)); // Handle "labels" which is an array
+    } else if (row[columnId]) {
+      uniqueValues.add(row[columnId].toString()); // Handle other columns
+    }
+  });
+  return Array.from(uniqueValues);
+};
+
+// Helper function to handle sorting
+export const handleRequestSort = (property: string, orderBy: string, order: "asc" | "desc", setOrder: Function, setOrderBy: Function) => {
+  const isAsc = orderBy === property && order === "asc";
+  setOrder(isAsc ? "desc" : "asc");
+  setOrderBy(property);
+};
+
+// Helper function to handle filter menu click
+export const handleFilterMenuClick = (event: React.MouseEvent<HTMLElement>, column: string, setFilterColumn: Function, setFilterMenuAnchor: Function) => {
+  setFilterColumn(column);
+  setFilterMenuAnchor(event.currentTarget);
+};
+
+// Helper function to close the filter menu
+export const closeFilterMenu = (setFilterMenuAnchor: Function) => setFilterMenuAnchor(null);
+
+// Helper function to reset the filter for a given column
+export const resetColumnFilter = (filterColumn: string, setSelectedFilters: Function) => {
+  setSelectedFilters((prev: any) => {
+    const updatedFilters = { ...prev };
+    delete updatedFilters[filterColumn];
+    return updatedFilters;
+  });
 };
