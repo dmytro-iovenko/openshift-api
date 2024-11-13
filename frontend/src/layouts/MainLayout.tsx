@@ -9,7 +9,9 @@ import ToolbarButtons from "../components/ToolbarButtons";
  */
 export default function MainLayout() {
   return (
-    <DashboardLayout slots={{ toolbarActions: ToolbarButtons, sidebarFooter: SidebarAvatar }}>
+    <DashboardLayout
+      slots={{ toolbarActions: ToolbarButtons, sidebarFooter: SidebarAvatar }}
+      sx={{ "& > .MuiBox-root": { overflowX: "hidden" } }}>
       <Outlet />
     </DashboardLayout>
   );

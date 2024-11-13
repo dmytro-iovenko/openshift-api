@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { Typography, Box, Tabs, Tab, Button } from "@mui/material";
+import { Typography, Box, Tabs, Tab, Button, Tooltip, IconButton } from "@mui/material";
 import { Application } from "../types/Application";
 import {
   createDeployment,
@@ -22,6 +22,7 @@ import DeploymentForm from "../components/deployments/DeploymentForm";
 import LoadingButton from "@mui/lab/LoadingButton";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import AddCircleTwoToneIcon from "@mui/icons-material/AddCircleTwoTone";
+import { useScreenSize } from "../context/ScreenSizeContext";
 
 /**
  * Renders detailed information about the application.
@@ -50,6 +51,8 @@ const ApplicationDetails: React.FC<{}> = (): JSX.Element => {
     generalSettings: false,
     envVars: false,
   });
+
+  const { isMobile } = useScreenSize();
 
   /**
    * Fetches application details and deployments when the component mounts.
@@ -221,7 +224,40 @@ const ApplicationDetails: React.FC<{}> = (): JSX.Element => {
   const PageToolbar = () => {
     return (
       <PageContainerToolbar>
-        <LoadingButton
+        {!isMobile ? (
+          <LoadingButton
+            variant="outlined"
+            color="primary"
+            onClick={handleRefreshAll}
+            loading={isRefreshing}
+            loadingPosition="start"
+            startIcon={<RefreshIcon />}>
+            Refresh All
+          </LoadingButton>
+        ) : (
+          <Tooltip title="Refresh All Deployments">
+            <IconButton color="primary" onClick={handleRefreshAll}>
+              <RefreshIcon />
+            </IconButton>
+          </Tooltip>
+        )}
+        {!isMobile ? (
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => setOpenForm(true)}
+            startIcon={<AddCircleTwoToneIcon />}>
+            Add Deployment
+          </Button>
+        ) : (
+          <Tooltip title="Add Deployment">
+            <IconButton color="primary" onClick={() => setOpenForm(true)}>
+              <AddCircleTwoToneIcon />
+            </IconButton>
+          </Tooltip>
+        )}
+
+        {/* <LoadingButton
           variant="outlined"
           color="primary"
           onClick={handleRefreshAll}
@@ -236,7 +272,7 @@ const ApplicationDetails: React.FC<{}> = (): JSX.Element => {
           onClick={() => setOpenForm(true)}
           startIcon={<AddCircleTwoToneIcon />}>
           Add Deployment
-        </Button>
+        </Button> */}
       </PageContainerToolbar>
     );
   };
@@ -295,6 +331,7 @@ const ApplicationDetails: React.FC<{}> = (): JSX.Element => {
                     rowActions={{ edit: "edit", delete: "delete", refresh: "refresh" }}
                     initialOrder="asc"
                     initialOrderBy="name"
+                    isRefreshing={isRefreshing}
                     rowsPerPage={10}
                   />
 
