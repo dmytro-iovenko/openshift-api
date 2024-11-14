@@ -1,0 +1,101 @@
+kind: CronJob
+apiVersion: batch/v1
+metadata:
+  name: scale-deployment-cronjob
+  namespace: iovenko80-dev
+  uid: b5a20108-e1af-4a46-9f17-8661fbd302e3
+  resourceVersion: '5230950699'
+  generation: 5
+  creationTimestamp: '2024-11-07T13:37:17Z'
+  managedFields:
+    - manager: Mozilla
+      operation: Update
+      apiVersion: batch/v1
+      time: '2024-11-07T18:47:33Z'
+      fieldsType: FieldsV1
+      fieldsV1:
+        'f:spec':
+          'f:concurrencyPolicy': {}
+          'f:failedJobsHistoryLimit': {}
+          'f:jobTemplate':
+            'f:spec':
+              'f:template':
+                'f:spec':
+                  'f:containers':
+                    'k:{"name":"scale-deployment"}':
+                      .: {}
+                      'f:command': {}
+                      'f:image': {}
+                      'f:imagePullPolicy': {}
+                      'f:name': {}
+                      'f:resources': {}
+                      'f:terminationMessagePath': {}
+                      'f:terminationMessagePolicy': {}
+                  'f:dnsPolicy': {}
+                  'f:restartPolicy': {}
+                  'f:schedulerName': {}
+                  'f:securityContext': {}
+                  'f:terminationGracePeriodSeconds': {}
+          'f:schedule': {}
+          'f:successfulJobsHistoryLimit': {}
+          'f:suspend': {}
+    - manager: kube-controller-manager
+      operation: Update
+      apiVersion: batch/v1
+      time: '2024-11-15T03:10:05Z'
+      fieldsType: FieldsV1
+      fieldsV1:
+        'f:status':
+          'f:lastScheduleTime': {}
+          'f:lastSuccessfulTime': {}
+      subresource: status
+spec:
+  schedule: '*/10 * * * *'
+  concurrencyPolicy: Allow
+  suspend: false
+  jobTemplate:
+    metadata:
+      creationTimestamp: null
+    spec:
+      template:
+        metadata:
+          creationTimestamp: null
+        spec:
+          containers:
+            - name: scale-deployment
+              image: openshift/origin-cli
+              command:
+                - /bin/sh
+                - '-c'
+                - |
+                  # Check if the replica count of the deployments is 0 before scaling
+                  shifthub_api_replicas=$(oc get deployment shifthub-api -o jsonpath='{.spec.replicas}')
+                  shifthub_app_replicas=$(oc get deployment shifthub-app -o jsonpath='{.spec.replicas}')
+
+                  if [ "$shifthub_api_replicas" -eq 0 ]; then
+                    echo "Scaling shifthub-api to 1 replica"
+                    oc scale deployment shifthub-api --replicas=1
+                  else
+                    echo "shifthub-api is already scaled"
+                  fi
+
+                  if [ "$shifthub_app_replicas" -eq 0 ]; then
+                    echo "Scaling shifthub-app to 1 replica"
+                    oc scale deployment shifthub-app --replicas=1
+                  else
+                    echo "shifthub-app is already scaled"
+                  fi
+              resources: {}
+              terminationMessagePath: /dev/termination-log
+              terminationMessagePolicy: File
+              imagePullPolicy: IfNotPresent
+          restartPolicy: OnFailure
+          terminationGracePeriodSeconds: 30
+          dnsPolicy: ClusterFirst
+          securityContext: {}
+          schedulerName: default-scheduler
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+status:
+  lastScheduleTime: '2024-11-15T03:10:00Z'
+  lastSuccessfulTime: '2024-11-15T03:10:05Z'
