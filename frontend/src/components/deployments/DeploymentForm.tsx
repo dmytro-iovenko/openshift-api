@@ -21,6 +21,7 @@ import {
   InputAdornment,
   FormHelperText,
 } from "@mui/material";
+import YamlEditorComponent from "../YamlEditorComponent";
 
 /**
  * Represents the props for the DeploymentForm component.
@@ -132,6 +133,8 @@ const DeploymentForm: React.FC<DeploymentFormProps> = ({
     envVars?: { [index: number]: { name?: string; value?: string } };
     formError?: string;
   }>({});
+
+  const [isYamlValid, setIsYamlValid] = useState(true);
 
   useEffect(() => {
     if (open) {
@@ -292,6 +295,19 @@ const DeploymentForm: React.FC<DeploymentFormProps> = ({
     handleChange("replicas", `${value}`);
   };
 
+  const handleYamlChange = (newYaml: string) => {
+    setFormValues((prev) => ({ ...prev, yaml: newYaml }));
+  };
+
+  // const handleYamlValidation = (valid: boolean) => {
+  //   setIsYamlValid(valid);
+  //   if (!valid) {
+  //     setErrors((prev) => ({ ...prev, yaml: "Invalid YAML format!" }));
+  //   } else {
+  //     setErrors((prev) => ({ ...prev, yaml: undefined }));
+  //   }
+  // };
+
   /**
    * Handles form submission and validation.
    */
@@ -314,6 +330,9 @@ const DeploymentForm: React.FC<DeploymentFormProps> = ({
     }
     if (!formValues.yaml && formValues.isYamlMode) {
       newErrors.yaml = "Please provide a YAML file.";
+    }
+    if (!isYamlValid) {
+      newErrors.yaml = "Please fix the YAML format.";
     }
     if (!formValues.replicas) {
       newErrors.replicas = "Please specify the number of replicas.";
@@ -509,7 +528,8 @@ const DeploymentForm: React.FC<DeploymentFormProps> = ({
       {selectedAppId &&
         (formValues.isYamlMode ? (
           <>
-            <TextField
+            <YamlEditorComponent text={formValues.yaml} onChange={handleYamlChange} error={errors.yaml} />
+            {/* <TextField
               label="YAML Configuration"
               multiline
               rows={5}
@@ -520,7 +540,7 @@ const DeploymentForm: React.FC<DeploymentFormProps> = ({
               error={!!errors.yaml}
               helperText={errors.yaml}
               disabled={isWaitingForMove}
-            />
+            /> */}
             <Box sx={{ mt: 2, display: "flex", justifyContent: "space-between" }}>
               <Button onClick={() => handleClose()} disabled={isWaitingForMove}>
                 Cancel
